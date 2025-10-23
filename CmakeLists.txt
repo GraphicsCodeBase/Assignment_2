@@ -1,0 +1,20 @@
+cmake_minimum_required(VERSION 3.20)
+project(Seam_Carving_Project VERSION 1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Ensure CMake uses vcpkg toolchain
+# (Visual Studio will auto-pass this if you opened the CMake project via VS)
+# set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
+
+find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
+
+add_executable(Seam_Carving_Project main.cpp)
+
+# Correct linking for vcpkg builds
+target_include_directories(Seam_Carving_Project PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_link_libraries(Seam_Carving_Project PRIVATE ${OpenCV_LIBS})
+
+message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
+message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
