@@ -8,13 +8,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # (Visual Studio will auto-pass this if you opened the CMake project via VS)
 # set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
 
+# Find all required packages
 find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
+find_package(glfw3 REQUIRED)
+find_package(imgui REQUIRED)
 
+# Create executable
 add_executable(Seam_Carving_Project main.cpp)
 
-# Correct linking for vcpkg builds
-target_include_directories(Seam_Carving_Project PRIVATE ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(Seam_Carving_Project PRIVATE ${OpenCV_LIBS})
+# Link all libraries
+target_link_libraries(Seam_Carving_Project PRIVATE
+    ${OpenCV_LIBS}
+    glfw
+    opengl32
+    imgui::imgui
+)
+
+# Include directories
+target_include_directories(Seam_Carving_Project PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+)
 
 message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
+message(STATUS "GLFW found: ${glfw3_FOUND}")
+message(STATUS "ImGui found: ${imgui_FOUND}")
