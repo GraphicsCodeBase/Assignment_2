@@ -8,31 +8,41 @@
 #include <chrono>
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ENERGY MAP COMPUTATION (SHARED)
+// ENERGY MAP COMPUTATION (Shared by DP & Greedy)
 // ═══════════════════════════════════════════════════════════════════════════
 
-cv::Mat computeEnergyMap(const cv::Mat& image) {
-    cv::Mat gray;
-    if (image.channels() == 3) {
-        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+cv::Mat computeEnergyMap(const cv::Mat & image) {
+    CV_Assert(!image.empty());
+    cv::Mat img32f;
+    if (image.type() != CV_8UC3) {
+        cv::Mat tmp;
+        if (image.channels() == 1) cv::cvtColor(image, tmp, cv::COLOR_GRAY2BGR);
+        else tmp = image;
+        tmp.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
     }
     else {
-        gray = image.clone();
+        image.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
     }
 
-    cv::Mat sobelX, sobelY;
-    cv::Sobel(gray, sobelX, CV_32F, 1, 0, 3);
-    cv::Sobel(gray, sobelY, CV_32F, 0, 1, 3);
-
-    cv::Mat energy(image.rows, image.cols, CV_32F);
-    for (int i = 0; i < image.rows; i++) {
-        for (int j = 0; j < image.cols; j++) {
-            float dx = sobelX.at<float>(i, j);
-            float dy = sobelY.at<float>(i, j);
-            energy.at<float>(i, j) = std::sqrt(dx * dx + dy * dy);
-        }
+    // Per-channel Scharr gradients + small Laplacian texture boost
+    std::vector<cv::Mat> ch; cv::split(img32f, ch);
+    cv::Mat energy = cv::Mat::zeros(image.size(), CV_32F);
+    for (int c = 0; c < 3; ++c) {
+        cv::Mat gx, gy;
+        cv::Scharr(ch[c], gx, CV_32F, 1, 0);
+        cv::Scharr(ch[c], gy, CV_32F, 0, 1);
+        energy += gx.mul(gx) + gy.mul(gy);
     }
+    cv::sqrt(energy, energy);
 
+    // Add Laplacian component to protect fine details
+    cv::Mat gray, lap, absLap;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    cv::Laplacian(gray, lap, CV_32F, 3);
+    cv::absdiff(lap, 0, absLap);
+    energy += 0.2f * absLap;
+
+    cv::GaussianBlur(energy, energy, cv::Size(3, 3), 0);
     return energy;
 }
 
@@ -41,18 +51,12 @@ cv::Mat computeEnergyMap(const cv::Mat& image) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 std::vector<int> findVerticalSeamDP(const cv::Mat& energy) {
-    int rows = energy.rows;
-    int cols = energy.cols;
-
+    int rows = energy.rows, cols = energy.cols;
     std::vector<std::vector<float>> dp(rows, std::vector<float>(cols, FLT_MAX));
     std::vector<std::vector<int>> parent(rows, std::vector<int>(cols, -1));
 
-    // Initialize first row
-    for (int j = 0; j < cols; j++) {
-        dp[0][j] = energy.at<float>(0, j);
-    }
+    for (int j = 0; j < cols; j++) dp[0][j] = energy.at<float>(0, j);
 
-    // Fill DP table
     for (int i = 1; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             for (int k = j - 1; k <= j + 1; k++) {
@@ -67,289 +71,229 @@ std::vector<int> findVerticalSeamDP(const cv::Mat& energy) {
         }
     }
 
-    // Find minimum in last row
     int minCol = 0;
-    float minEnergy = dp[rows - 1][0];
+    float minVal = dp[rows - 1][0];
     for (int j = 1; j < cols; j++) {
-        if (dp[rows - 1][j] < minEnergy) {
-            minEnergy = dp[rows - 1][j];
-            minCol = j;
-        }
+        if (dp[rows - 1][j] < minVal) { minVal = dp[rows - 1][j]; minCol = j; }
     }
 
-    // Backtrack
     std::vector<int> seam(rows);
     seam[rows - 1] = minCol;
-    for (int i = rows - 2; i >= 0; i--) {
-        seam[i] = parent[i + 1][seam[i + 1]];
-    }
-
+    for (int i = rows - 2; i >= 0; i--) seam[i] = parent[i + 1][seam[i + 1]];
     return seam;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GREEDY SEAM FINDING
+// GREEDY SEAM FINDING (Improved Lookahead Version)
 // ═══════════════════════════════════════════════════════════════════════════
 
-std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
-    int rows = energy.rows;
-    int cols = energy.cols;
-
+std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy, int lookaheadDepth = 3) {
+    const int rows = energy.rows, cols = energy.cols;
     std::vector<int> seam(rows);
 
-    // Start from minimum in first row
     int currentCol = 0;
-    float minEnergy = energy.at<float>(0, 0);
-    for (int j = 1; j < cols; j++) {
-        if (energy.at<float>(0, j) < minEnergy) {
-            minEnergy = energy.at<float>(0, j);
-            currentCol = j;
-        }
+    float best = energy.at<float>(0, 0);
+    for (int j = 1; j < cols; ++j) {
+        float v = energy.at<float>(0, j);
+        if (v < best) { best = v; currentCol = j; }
     }
     seam[0] = currentCol;
 
-    // Greedy: at each row, pick minimum among three neighbors
-    for (int i = 1; i < rows; i++) {
-        int bestCol = currentCol;
-        float bestEnergy = FLT_MAX;
-
-        for (int k = currentCol - 1; k <= currentCol + 1; k++) {
-            if (k >= 0 && k < cols) {
-                float energyValue = energy.at<float>(i, k);
-                if (energyValue < bestEnergy) {
-                    bestEnergy = energyValue;
-                    bestCol = k;
+    auto estimatePathEnergy = [&](int startRow, int startCol, int depth) {
+        float total = 0.f;
+        int col = startCol;
+        for (int d = 0; d < depth && (startRow + d) < rows; ++d) {
+            float bestE = FLT_MAX;
+            int bestC = col;
+            for (int k = col - 1; k <= col + 1; ++k) {
+                if (k >= 0 && k < cols) {
+                    float e = energy.at<float>(startRow + d, k);
+                    if (e < bestE) { bestE = e; bestC = k; }
                 }
             }
+            total += bestE;
+            col = bestC;
         }
+        return total;
+        };
 
+    for (int i = 1; i < rows; ++i) {
+        int bestCol = currentCol;
+        float bestFuture = FLT_MAX;
+        for (int k = currentCol - 1; k <= currentCol + 1; ++k) {
+            if (k < 0 || k >= cols) continue;
+            float future = estimatePathEnergy(i, k, lookaheadDepth);
+            if (future < bestFuture) { bestFuture = future; bestCol = k; }
+        }
         seam[i] = bestCol;
         currentCol = bestCol;
     }
-
     return seam;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// UTILITY FUNCTIONS
+// COMMON UTILITIES
 // ═══════════════════════════════════════════════════════════════════════════
 
 float calculateSeamEnergy(const cv::Mat& energy, const std::vector<int>& seam) {
-    float totalEnergy = 0.0f;
-    for (size_t i = 0; i < seam.size(); i++) {
-        totalEnergy += energy.at<float>(i, seam[i]);
-    }
-    return totalEnergy;
+    float total = 0.f;
+    for (size_t i = 0; i < seam.size(); ++i)
+        total += energy.at<float>((int)i, seam[i]);
+    return total;
 }
 
 cv::Mat removeVerticalSeam(const cv::Mat& image, const std::vector<int>& seam) {
-    int rows = image.rows;
-    int cols = image.cols;
+    int rows = image.rows, cols = image.cols;
     cv::Mat result(rows, cols - 1, image.type());
-
     for (int i = 0; i < rows; i++) {
         int seamCol = seam[i];
         for (int j = 0, k = 0; j < cols; j++) {
-            if (j != seamCol) {
-                if (image.channels() == 3) {
-                    result.at<cv::Vec3b>(i, k++) = image.at<cv::Vec3b>(i, j);
-                }
-                else {
-                    result.at<uint8_t>(i, k++) = image.at<uint8_t>(i, j);
-                }
-            }
+            if (j == seamCol) continue;
+            if (image.channels() == 3)
+                result.at<cv::Vec3b>(i, k++) = image.at<cv::Vec3b>(i, j);
+            else
+                result.at<uchar>(i, k++) = image.at<uchar>(i, j);
         }
     }
-
     return result;
 }
 
-// Visualize a seam on an image
-cv::Mat visualizeSeam(const cv::Mat& image, const std::vector<int>& seam, cv::Scalar color) {
-    cv::Mat result = image.clone();
+cv::Mat visualizeSeam(const cv::Mat& img, const std::vector<int>& seam, cv::Scalar color) {
+    cv::Mat vis = img.clone();
     for (size_t i = 0; i < seam.size(); i++) {
-        int col = seam[i];
-        // Draw a thicker line for visibility
-        for (int offset = -1; offset <= 1; offset++) {
-            if (col + offset >= 0 && col + offset < result.cols) {
-                result.at<cv::Vec3b>(i, col + offset) = cv::Vec3b(color[0], color[1], color[2]);
-            }
-        }
+        int c = seam[i];
+        for (int dx = -1; dx <= 1; dx++)
+            if (c + dx >= 0 && c + dx < vis.cols)
+                vis.at<cv::Vec3b>((int)i, c + dx) = cv::Vec3b(color[0], color[1], color[2]);
     }
-    return result;
+    return vis;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// COMPARISON FUNCTIONS
+// SEAM CARVING COMPARISON LOGIC
 // ═══════════════════════════════════════════════════════════════════════════
 
-struct AlgorithmStats {
-    long long timeTaken;  // milliseconds
-    float totalSeamEnergy;
+struct Stats {
+    long long timeMs;
+    float totalEnergy;
     int seamsRemoved;
 };
 
-AlgorithmStats seamCarveWithStats(cv::Mat& image, int targetWidth,
-    bool useDP, const std::string& algorithmName) {
-    AlgorithmStats stats = { 0, 0.0f, 0 };
-
-    int seamsToRemove = image.cols - targetWidth;
-
+Stats seamCarveWithStats(cv::Mat& img, int targetWidth, bool useDP) {
+    Stats s{ 0, 0.f, 0 };
+    int seams = img.cols - targetWidth;
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (int i = 0; i < seamsToRemove; i++) {
-        cv::Mat energy = computeEnergyMap(image);
-        std::vector<int> seam;
+    for (int i = 0; i < seams; i++) {
+        cv::Mat energy = computeEnergyMap(img);
+        std::vector<int> seam = useDP ?
+            findVerticalSeamDP(energy) : findVerticalSeamGreedy(energy, 5);
 
-        if (useDP) {
-            seam = findVerticalSeamDP(energy);
-        }
-        else {
-            seam = findVerticalSeamGreedy(energy);
-        }
-
-        stats.totalSeamEnergy += calculateSeamEnergy(energy, seam);
-        stats.seamsRemoved++;
-
-        image = removeVerticalSeam(image, seam);
+        s.totalEnergy += calculateSeamEnergy(energy, seam);
+        s.seamsRemoved++;
+        img = removeVerticalSeam(img, seam);
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
-    stats.timeTaken = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-    return stats;
+    s.timeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now() - start)
+        .count();
+    return s;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN COMPARISON APPLICATION
+// MAIN
 // ═══════════════════════════════════════════════════════════════════════════
 
 int main() {
+    cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
     std::cout << "\n╔═══════════════════════════════════════════════════════════╗\n";
-    std::cout << "║     DP vs GREEDY SEAM CARVING COMPARISON TOOL            ║\n";
+    std::cout << "║       DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON          ║\n";
     std::cout << "╚═══════════════════════════════════════════════════════════╝\n\n";
 
-    // Load image
-    cv::Mat originalImage = cv::imread("../../../Images/Broadway_tower_edit.jpg");
-    if (originalImage.empty()) {
-        std::cerr << "Error: Could not load image\n";
+    cv::Mat original = cv::imread("../../../Images/ghibli.jpg");
+    if (original.empty()) {
+        std::cerr << "✗ Error: Could not load image\n";
         return -1;
     }
 
-    std::cout << "✓ Image loaded: " << originalImage.cols << "x" << originalImage.rows << " pixels\n\n";
-
-    // Get target dimensions
+    std::cout << "✓ Image loaded: " << original.cols << "x" << original.rows << "\n";
     int targetWidth;
-    std::cout << "Enter target width (smaller than " << originalImage.cols << "): ";
+    std::cout << "Enter target width (< " << original.cols << "): ";
     std::cin >> targetWidth;
-
-    if (targetWidth >= originalImage.cols || targetWidth < 100) {
-        std::cerr << "Invalid width!\n";
+    if (targetWidth >= original.cols || targetWidth < 100) {
+        std::cerr << "Invalid width.\n";
         return -1;
     }
 
-    std::cout << "\n═══════════════════════════════════════════════════════════\n";
-    std::cout << "Running DYNAMIC PROGRAMMING algorithm...\n";
-    std::cout << "═══════════════════════════════════════════════════════════\n";
+    // --- DP ---
+    cv::Mat dpImg = original.clone();
+    std::cout << "\n▶ Running DYNAMIC PROGRAMMING...\n";
+    Stats dp = seamCarveWithStats(dpImg, targetWidth, true);
 
-    cv::Mat dpImage = originalImage.clone();
-    AlgorithmStats dpStats = seamCarveWithStats(dpImage, targetWidth, true, "DP");
+    // --- GREEDY ---
+    cv::Mat greedyImg = original.clone();
+    std::cout << "\n▶ Running GREEDY (lookahead=5)...\n";
+    Stats gr = seamCarveWithStats(greedyImg, targetWidth, false);
 
-    std::cout << "\n═══════════════════════════════════════════════════════════\n";
-    std::cout << "Running GREEDY algorithm...\n";
-    std::cout << "═══════════════════════════════════════════════════════════\n";
-
-    cv::Mat greedyImage = originalImage.clone();
-    AlgorithmStats greedyStats = seamCarveWithStats(greedyImage, targetWidth, false, "Greedy");
-
-    // Print comparison results
+    // --- Results ---
     std::cout << "\n╔═══════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                    COMPARISON RESULTS                     ║\n";
+    std::cout << "║                        RESULTS                            ║\n";
     std::cout << "╠═══════════════════════════════════════════════════════════╣\n";
-    std::cout << "║ Metric                    │ DP          │ Greedy         ║\n";
+    printf("║ Metric             │ DP             │ Greedy (lookahead)  ║\n");
     std::cout << "╠═══════════════════════════════════════════════════════════╣\n";
+    printf("║ Time (ms)          │ %-13lld │ %-18lld ║\n", dp.timeMs, gr.timeMs);
+    float dpAvg = dp.totalEnergy / dp.seamsRemoved;
+    float grAvg = gr.totalEnergy / gr.seamsRemoved;
+    printf("║ Avg Seam Energy    │ %-13.2f │ %-18.2f ║\n", dpAvg, grAvg);
+    printf("║ Total Energy       │ %-13.2f │ %-18.2f ║\n", dp.totalEnergy, gr.totalEnergy);
+    printf("╚═══════════════════════════════════════════════════════════╝\n");
 
-    printf("║ Time (ms)                 │ %-11lld │ %-14lld ║\n",
-        dpStats.timeTaken, greedyStats.timeTaken);
+    // --- Single seam visualization ---
+    cv::Mat energy = computeEnergyMap(original);
+    auto dpSeam = findVerticalSeamDP(energy);
+    auto grSeam = findVerticalSeamGreedy(energy, 5);
 
-    float dpAvgEnergy = dpStats.totalSeamEnergy / dpStats.seamsRemoved;
-    float greedyAvgEnergy = greedyStats.totalSeamEnergy / greedyStats.seamsRemoved;
+    cv::Mat dpVis = visualizeSeam(original, dpSeam, cv::Scalar(0, 255, 0));
+    cv::Mat grVis = visualizeSeam(original, grSeam, cv::Scalar(0, 0, 255));
 
-    printf("║ Avg Seam Energy           │ %-11.2f │ %-14.2f ║\n",
-        dpAvgEnergy, greedyAvgEnergy);
+    // Add a separator between seam visualizations
+    int sepWidth = 10;
+    cv::Mat seamSeparator(dpVis.rows, sepWidth, CV_8UC3, cv::Scalar(200, 200, 200));
+    std::vector<cv::Mat> seamParts = { dpVis, seamSeparator, grVis };
+    cv::Mat seamComparison;
+    cv::hconcat(seamParts, seamComparison);
 
-    printf("║ Total Energy              │ %-11.2f │ %-14.2f ║\n",
-        dpStats.totalSeamEnergy, greedyStats.totalSeamEnergy);
+    cv::putText(seamComparison, "DP (Green)        GREEDY (Red)", { 30, 40 },
+        cv::FONT_HERSHEY_SIMPLEX, 1, { 255, 255, 0 }, 2);
 
-    float energyDiff = ((greedyStats.totalSeamEnergy - dpStats.totalSeamEnergy) / dpStats.totalSeamEnergy) * 100;
-    printf("║ Energy Difference         │ Baseline    │ +%.2f%%        ║\n", energyDiff);
+    cv::namedWindow("Seam Comparison", cv::WINDOW_NORMAL);
+    cv::imshow("Seam Comparison", seamComparison);
 
-    std::cout << "╚═══════════════════════════════════════════════════════════╝\n\n";
+    // --- Result Comparison with separator ---
+    cv::Mat dpLabelled = dpImg.clone();
+    cv::Mat grLabelled = greedyImg.clone();
+    cv::putText(dpLabelled, "DP", cv::Point(30, 50),
+        cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(0, 255, 255), 3);
+    cv::putText(grLabelled, "GD", cv::Point(30, 50),
+        cv::FONT_HERSHEY_SIMPLEX, 1.2, cv::Scalar(0, 255, 255), 3);
 
-    // Show one more comparison: find the same seam with both algorithms
-    std::cout << "Visual comparison of a single seam:\n";
-    cv::Mat energy = computeEnergyMap(originalImage);
-    std::vector<int> dpSeam = findVerticalSeamDP(energy);
-    std::vector<int> greedySeam = findVerticalSeamGreedy(energy);
+    cv::Mat resultSeparator(dpImg.rows, sepWidth, CV_8UC3, cv::Scalar(200, 200, 200));
+    std::vector<cv::Mat> resultParts = { dpLabelled, resultSeparator, grLabelled };
+    cv::Mat resultComparison;
+    cv::hconcat(resultParts, resultComparison);
 
-    float dpSeamEnergy = calculateSeamEnergy(energy, dpSeam);
-    float greedySeamEnergy = calculateSeamEnergy(energy, greedySeam);
+    cv::namedWindow("Result Comparison", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Result Comparison", 1600, 900);
+    cv::imshow("Result Comparison", resultComparison);
 
-    std::cout << "  DP Seam Energy:     " << dpSeamEnergy << " (optimal)\n";
-    std::cout << "  Greedy Seam Energy: " << greedySeamEnergy;
-    if (greedySeamEnergy > dpSeamEnergy) {
-        std::cout << " (+" << ((greedySeamEnergy - dpSeamEnergy) / dpSeamEnergy * 100) << "% worse)\n";
-    }
-    else {
-        std::cout << " (same as optimal)\n";
-    }
-
-    // Visualize seams
-    cv::Mat dpSeamVis = visualizeSeam(originalImage, dpSeam, cv::Scalar(0, 255, 0));    // Green
-    cv::Mat greedySeamVis = visualizeSeam(originalImage, greedySeam, cv::Scalar(0, 0, 255)); // Red
-
-    // Create comparison image
-    int maxHeight = originalImage.rows;
-    int totalWidth = dpSeamVis.cols + greedySeamVis.cols + 20;
-    cv::Mat seamComparison(maxHeight, totalWidth, CV_8UC3, cv::Scalar(50, 50, 50));
-
-    dpSeamVis.copyTo(seamComparison(cv::Rect(0, 0, dpSeamVis.cols, maxHeight)));
-    greedySeamVis.copyTo(seamComparison(cv::Rect(dpSeamVis.cols + 20, 0, greedySeamVis.cols, maxHeight)));
-
-    cv::putText(seamComparison, "DP (Green)", cv::Point(10, 30),
-        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 0), 2);
-    cv::putText(seamComparison, "GREEDY (Red)", cv::Point(dpSeamVis.cols + 30, 30),
-        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255), 2);
-
-    // Create result comparison
-    cv::Mat resultComparison(maxHeight, totalWidth, CV_8UC3, cv::Scalar(50, 50, 50));
-    dpImage.copyTo(resultComparison(cv::Rect(0, 0, dpImage.cols, maxHeight)));
-    greedyImage.copyTo(resultComparison(cv::Rect(dpImage.cols + 20, 0, greedyImage.cols, maxHeight)));
-
-    cv::putText(resultComparison, "DP RESULT", cv::Point(10, 30),
-        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
-    cv::putText(resultComparison, "GREEDY RESULT", cv::Point(dpImage.cols + 30, 30),
-        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
-
-    // Display results
-    cv::namedWindow("Single Seam Comparison", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Single Seam Comparison", 1600, 800);
-    cv::imshow("Single Seam Comparison", seamComparison);
-
-    cv::namedWindow("Final Results Comparison", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Final Results Comparison", 1600, 800);
-    cv::imshow("Final Results Comparison", resultComparison);
-
-    // Save results
-    cv::imwrite("dp_result.jpg", dpImage);
-    cv::imwrite("greedy_result.jpg", greedyImage);
+    // Save all outputs
+    cv::imwrite("dp_result.jpg", dpImg);
+    cv::imwrite("greedy_result.jpg", greedyImg);
     cv::imwrite("seam_comparison.jpg", seamComparison);
-    cv::imwrite("final_comparison.jpg", resultComparison);
+    cv::imwrite("final_comparison_with_separator.jpg", resultComparison);
 
-    std::cout << "\n✓ Results saved to: dp_result.jpg, greedy_result.jpg\n";
-    std::cout << "✓ Comparisons saved to: seam_comparison.jpg, final_comparison.jpg\n";
-    std::cout << "\nPress any key to exit...\n";
+    std::cout << "\n✓ Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg\n";
     cv::waitKey(0);
-
     return 0;
+
 }

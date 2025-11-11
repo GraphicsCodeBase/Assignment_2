@@ -11,76 +11,95 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Step 1: Calculate energy map using Sobel filter (same as DP version)
+// Stronger energy: sum of color-channel gradients + a small Laplacian texture term
 cv::Mat computeEnergyMap(const cv::Mat& image) {
-    // Convert to grayscale if needed
-    cv::Mat gray;
-    if (image.channels() == 3) {
-        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    CV_Assert(!image.empty());
+    cv::Mat img32f;
+    if (image.type() != CV_8UC3) {
+        cv::Mat tmp;
+        if (image.channels() == 1) cv::cvtColor(image, tmp, cv::COLOR_GRAY2BGR);
+        else tmp = image;
+        tmp.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
     }
     else {
-        gray = image.clone();
+        image.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
     }
 
-    // Compute gradients using Sobel filter
-    cv::Mat sobelX, sobelY;
-    cv::Sobel(gray, sobelX, CV_32F, 1, 0, 3);  // X gradient
-    cv::Sobel(gray, sobelY, CV_32F, 0, 1, 3);  // Y gradient
+    // Per-channel Sobel, then sum squared magnitudes across channels
+    std::vector<cv::Mat> ch; cv::split(img32f, ch);
+    cv::Mat energy = cv::Mat::zeros(image.size(), CV_32F);
 
-    // Compute magnitude of gradients (energy)
-    cv::Mat energy(image.rows, image.cols, CV_32F);
-    for (int i = 0; i < image.rows; i++) {
-        for (int j = 0; j < image.cols; j++) {
-            float dx = sobelX.at<float>(i, j);
-            float dy = sobelY.at<float>(i, j);
-            energy.at<float>(i, j) = std::sqrt(dx * dx + dy * dy);
-        }
+    for (int c = 0; c < 3; ++c) {
+        cv::Mat gx, gy;
+        // Scharr is a bit sharper than Sobel; use Sobel(3) if you prefer
+        cv::Scharr(ch[c], gx, CV_32F, 1, 0);
+        cv::Scharr(ch[c], gy, CV_32F, 0, 1);
+        energy += gx.mul(gx) + gy.mul(gy);
     }
+    cv::sqrt(energy, energy);
+
+    // Small texture boost so fine details (like a person/towel) get protected
+    cv::Mat gray, lap, absLap;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    cv::Laplacian(gray, lap, CV_32F, 3);
+    cv::absdiff(lap, 0, absLap);                // |Laplacian|
+    energy += 0.20f * absLap;                   // tune 0.10–0.35
+
+    // Optional: light blur to stabilize noisy gradients
+    cv::GaussianBlur(energy, energy, cv::Size(3, 3), 0);
 
     return energy;
 }
 
+
 // Step 2: Find vertical seam using GREEDY ALGORITHM
 // At each row, simply pick the minimum energy pixel among the three valid neighbors
-std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
-    int rows = energy.rows;
-    int cols = energy.cols;
-
+std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy, int lookaheadDepth = 3) {
+    const int rows = energy.rows, cols = energy.cols;
     std::vector<int> seam(rows);
 
-    // Start from the top row - find the minimum energy pixel
+    // Start at global min in top row
     int currentCol = 0;
-    float minEnergy = energy.at<float>(0, 0);
-    for (int j = 1; j < cols; j++) {
-        if (energy.at<float>(0, j) < minEnergy) {
-            minEnergy = energy.at<float>(0, j);
-            currentCol = j;
-        }
+    float best = energy.at<float>(0, 0);
+    for (int j = 1; j < cols; ++j) {
+        float v = energy.at<float>(0, j);
+        if (v < best) { best = v; currentCol = j; }
     }
     seam[0] = currentCol;
 
-    // Greedy selection: at each row, pick the minimum energy pixel
-    // among the three valid neighbors (left-down, down, right-down)
-    for (int i = 1; i < rows; i++) {
-        int bestCol = currentCol;
-        float bestEnergy = FLT_MAX;
-
-        // Check three possible positions: currentCol-1, currentCol, currentCol+1
-        for (int k = currentCol - 1; k <= currentCol + 1; k++) {
-            if (k >= 0 && k < cols) {
-                float energyValue = energy.at<float>(i, k);
-                if (energyValue < bestEnergy) {
-                    bestEnergy = energyValue;
-                    bestCol = k;
+    auto estimatePathEnergy = [&](int startRow, int startCol, int depth) {
+        float total = 0.f;
+        int col = startCol;
+        for (int d = 0; d < depth && (startRow + d) < rows; ++d) {
+            float bestE = std::numeric_limits<float>::infinity();
+            int bestC = col;
+            for (int k = col - 1; k <= col + 1; ++k) {
+                if (k >= 0 && k < cols) {
+                    float e = energy.at<float>(startRow + d, k);
+                    if (e < bestE) { bestE = e; bestC = k; }
                 }
             }
+            total += bestE;
+            col = bestC;
         }
+        return total;
+        };
 
+    for (int i = 1; i < rows; ++i) {
+        int bestCol = currentCol;
+        float bestFuture = std::numeric_limits<float>::infinity();
+        for (int k = currentCol - 1; k <= currentCol + 1; ++k) {
+            if (k < 0 || k >= cols) continue;
+            float future = estimatePathEnergy(i, k, lookaheadDepth);
+            if (future < bestFuture) { bestFuture = future; bestCol = k; }
+        }
         seam[i] = bestCol;
         currentCol = bestCol;
     }
-
     return seam;
 }
+
+
 
 // Calculate total energy of a seam (for comparison purposes)
 float calculateSeamEnergy(const cv::Mat& energy, const std::vector<int>& seam) {
@@ -148,7 +167,7 @@ cv::Mat seamCarveGreedy(cv::Mat image, int targetWidth, int targetHeight) {
             std::cout << "  Vertical seam " << (i + 1) << "/" << verticalSeamsToRemove << "\n";
         }
         cv::Mat energy = computeEnergyMap(image);
-        std::vector<int> seam = findVerticalSeamGreedy(energy);
+        std::vector<int> seam = findVerticalSeamGreedy(energy, 5);
 
         // Track seam energy for statistics
         totalSeamEnergy += calculateSeamEnergy(energy, seam);
@@ -252,10 +271,10 @@ int main(int argc, char* argv[]) {
     std::cout << "╚═══════════════════════════════════════════╝\n\n";
 
     // Load image
-    cv::Mat originalImage = cv::imread("../../../Images/image.jpg");
+    cv::Mat originalImage = cv::imread("../../../Images/Broadway_tower_edit.jpg");
 
     if (originalImage.empty()) {
-        std::cerr << "Error: Could not load image at ../../../Images/image.jpg\n";
+        std::cerr << "Error: Could not load image at ../../../Images/Broadway_tower_edit.jpg\n";
         return -1;
     }
 
