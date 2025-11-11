@@ -236,10 +236,10 @@ int main(int argc, char* argv[]) {
     std::cout << "╚══════════════════════════════════════╝\n\n";
 
     // Load image
-    cv::Mat originalImage = cv::imread("../../../Images/image.jpg");
+    cv::Mat originalImage = cv::imread("../../../Images/tower.jpg");
 
     if (originalImage.empty()) {
-        std::cerr << "Error: Could not load image at ../../../Images/ghibli.jpg\n";
+        std::cerr << "Error: Could not load image at ../../../Images/tower.jpg\n";
         return -1;
     }
 
