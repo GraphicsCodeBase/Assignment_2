@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.20)
 project(Seam_Carving_Project VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -10,26 +10,56 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find all required packages
 find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
-find_package(glfw3 REQUIRED)
-find_package(imgui REQUIRED)
 
-# Create executable
-add_executable(Seam_Carving_Project main.cpp)
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTABLE 1: Original Dynamic Programming Implementation
+# ═══════════════════════════════════════════════════════════════════════════
+add_executable(Seam_Carving_DP main.cpp)
 
-# Link all libraries
-target_link_libraries(Seam_Carving_Project PRIVATE
+target_link_libraries(Seam_Carving_DP PRIVATE
     ${OpenCV_LIBS}
-    glfw
-    opengl32
-    imgui::imgui
 )
 
-# Include directories
-target_include_directories(Seam_Carving_Project PRIVATE
+target_include_directories(Seam_Carving_DP PRIVATE
     ${OpenCV_INCLUDE_DIRS}
 )
 
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTABLE 2: Greedy Algorithm Implementation
+# ═══════════════════════════════════════════════════════════════════════════
+add_executable(Seam_Carving_Greedy GreedyAlgo.cpp)
+
+target_link_libraries(Seam_Carving_Greedy PRIVATE
+    ${OpenCV_LIBS}
+)
+
+target_include_directories(Seam_Carving_Greedy PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTABLE 3: Comparison Tool (DP vs Greedy)
+# ═══════════════════════════════════════════════════════════════════════════
+add_executable(Compare_Algorithms "CompareDPGreed.cpp")
+
+target_link_libraries(Compare_Algorithms PRIVATE
+    ${OpenCV_LIBS}
+)
+
+target_include_directories(Compare_Algorithms PRIVATE
+    ${OpenCV_INCLUDE_DIRS}
+)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Build Info
+# ═══════════════════════════════════════════════════════════════════════════
 message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
-message(STATUS "GLFW found: ${glfw3_FOUND}")
-message(STATUS "ImGui found: ${imgui_FOUND}")
+message(STATUS "")
+message(STATUS "Configured 3 executables:")
+message(STATUS "  1. Seam_Carving_DP         - Dynamic Programming implementation")
+message(STATUS "  2. Seam_Carving_Greedy     - Greedy Algorithm implementation")
+message(STATUS "  3. Compare_Algorithms      - Side-by-side comparison tool")
+message(STATUS "")
+message(STATUS "To build all: cmake --build . --config Release")
+message(STATUS "To run in Visual Studio: Right-click executable → Set as Startup Project")
