@@ -206,17 +206,15 @@ Stats seamCarveWithStats(cv::Mat& img, int targetWidth, bool useDP) {
 
 int main() {
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
-    std::cout << "\n╔═══════════════════════════════════════════════════════════╗\n";
-    std::cout << "║       DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON          ║\n";
-    std::cout << "╚═══════════════════════════════════════════════════════════╝\n\n";
+    std::cout << "       DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON          \n";
 
-    cv::Mat original = cv::imread("../../../Images/ghibli.jpg");
+    cv::Mat original = cv::imread("../../../Images/tower.jpg");
     if (original.empty()) {
-        std::cerr << "✗ Error: Could not load image\n";
+        std::cerr << "Error: Could not load image\n";
         return -1;
     }
 
-    std::cout << "✓ Image loaded: " << original.cols << "x" << original.rows << "\n";
+    std::cout << "Image loaded: " << original.cols << "x" << original.rows << "\n";
     int targetWidth;
     std::cout << "Enter target width (< " << original.cols << "): ";
     std::cin >> targetWidth;
@@ -227,26 +225,22 @@ int main() {
 
     // --- DP ---
     cv::Mat dpImg = original.clone();
-    std::cout << "\n▶ Running DYNAMIC PROGRAMMING...\n";
+    std::cout << "\nRunning DYNAMIC PROGRAMMING...\n";
     Stats dp = seamCarveWithStats(dpImg, targetWidth, true);
 
     // --- GREEDY ---
     cv::Mat greedyImg = original.clone();
-    std::cout << "\n▶ Running GREEDY (lookahead=5)...\n";
+    std::cout << "\nRunning GREEDY (lookahead=5)...\n";
     Stats gr = seamCarveWithStats(greedyImg, targetWidth, false);
 
     // --- Results ---
-    std::cout << "\n╔═══════════════════════════════════════════════════════════╗\n";
-    std::cout << "║                        RESULTS                            ║\n";
-    std::cout << "╠═══════════════════════════════════════════════════════════╣\n";
-    printf("║ Metric             │ DP             │ Greedy (lookahead)  ║\n");
-    std::cout << "╠═══════════════════════════════════════════════════════════╣\n";
-    printf("║ Time (ms)          │ %-13lld │ %-18lld ║\n", dp.timeMs, gr.timeMs);
+    std::cout << "                        RESULTS                            \n";
+    printf(" Metric              |DP              |Greedy (lookahead)  \n");
+    printf(" Time (ms)          │ %-13lld │ %-18lld \n", dp.timeMs, gr.timeMs);
     float dpAvg = dp.totalEnergy / dp.seamsRemoved;
     float grAvg = gr.totalEnergy / gr.seamsRemoved;
-    printf("║ Avg Seam Energy    │ %-13.2f │ %-18.2f ║\n", dpAvg, grAvg);
-    printf("║ Total Energy       │ %-13.2f │ %-18.2f ║\n", dp.totalEnergy, gr.totalEnergy);
-    printf("╚═══════════════════════════════════════════════════════════╝\n");
+    printf(" Avg Seam Energy    │ %-13.2f │ %-18.2f \n", dpAvg, grAvg);
+    printf(" Total Energy       │ %-13.2f │ %-18.2f \n", dp.totalEnergy, gr.totalEnergy);
 
     // --- Single seam visualization ---
     cv::Mat energy = computeEnergyMap(original);
@@ -292,7 +286,7 @@ int main() {
     cv::imwrite("seam_comparison.jpg", seamComparison);
     cv::imwrite("final_comparison_with_separator.jpg", resultComparison);
 
-    std::cout << "\n✓ Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg\n";
+    std::cout << "\n Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg\n";
     cv::waitKey(0);
     return 0;
 

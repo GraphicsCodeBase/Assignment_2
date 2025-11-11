@@ -265,16 +265,14 @@ cv::Mat createComparison(const cv::Mat& original, const cv::Mat& current) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 int main(int argc, char* argv[]) {
-    std::cout << "\n╔═══════════════════════════════════════════╗\n";
-    std::cout << "║   GREEDY SEAM CARVING APPLICATION        ║\n";
-    std::cout << "║   Working dir: " << std::filesystem::current_path().string().substr(0, 24) << "...║\n";
-    std::cout << "╚═══════════════════════════════════════════╝\n\n";
+    std::cout << "GREEDY SEAM CARVING APPLICATION    \n";
+    std::cout << "Working dir: " << std::filesystem::current_path().string().substr(0, 24) << "...║\n";
 
     // Load image
-    cv::Mat originalImage = cv::imread("../../../Images/Broadway_tower_edit.jpg");
+    cv::Mat originalImage = cv::imread("../../../Images/tower.jpg");
 
     if (originalImage.empty()) {
-        std::cerr << "Error: Could not load image at ../../../Images/Broadway_tower_edit.jpg\n";
+        std::cerr << "Error: Could not load image at ../../../Images/tower.jpg\n";
         return -1;
     }
 
@@ -294,17 +292,14 @@ int main(int argc, char* argv[]) {
     cv::pollKey();
 
     while (running) {
-        std::cout << "\n╔════════════════════════════════════════╗\n";
-        std::cout << "║    GREEDY SEAM CARVING MENU           ║\n";
-        std::cout << "║    Current: " << currentImage.cols << "x" << currentImage.rows << "            ║\n";
-        std::cout << "╠════════════════════════════════════════╣\n";
-        std::cout << "║ [1] Custom size (width x height)      ║\n";
-        std::cout << "║ [2] Reduce width by 100px             ║\n";
-        std::cout << "║ [3] Reduce height by 100px            ║\n";
-        std::cout << "║ [4] Reset to original                 ║\n";
-        std::cout << "║ [5] Save result                       ║\n";
-        std::cout << "║ [6] Exit                              ║\n";
-        std::cout << "╚════════════════════════════════════════╝\n";
+        std::cout << "    GREEDY SEAM CARVING MENU           \n";
+        std::cout << "    Current: " << currentImage.cols << "x" << currentImage.rows << "            ║\n";
+        std::cout << "[1] Custom size (width x height)      \n";
+        std::cout << "[2] Reduce width by 100px             \n";
+        std::cout << "[3] Reduce height by 100px            \n";
+        std::cout << "[4] Reset to original                 \n";
+        std::cout << "[5] Save result                       \n";
+        std::cout << "[6] Exit                              \n";
         std::cout << "Note: Using GREEDY algorithm (local decisions)\n";
         std::cout << "Enter choice (1-6): ";
 
