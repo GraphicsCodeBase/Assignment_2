@@ -14,7 +14,11 @@ find_package(glfw3 REQUIRED)
 find_package(imgui REQUIRED)
 
 # Create executable
-add_executable(Seam_Carving_Project main.cpp)
+add_executable(Seam_Carving_Project main.cpp "seam_carving_bonus.h" "seam_carving_bonus.cpp")
+
+if (MSVC)
+    target_compile_options(Seam_Carving_Project PRIVATE /utf-8)
+endif()
 
 # Link all libraries
 target_link_libraries(Seam_Carving_Project PRIVATE
