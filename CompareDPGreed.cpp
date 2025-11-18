@@ -11,38 +11,30 @@
 // ENERGY MAP COMPUTATION (Shared by DP & Greedy)
 // ═══════════════════════════════════════════════════════════════════════════
 
-cv::Mat computeEnergyMap(const cv::Mat & image) {
-    CV_Assert(!image.empty());
-    cv::Mat img32f;
-    if (image.type() != CV_8UC3) {
-        cv::Mat tmp;
-        if (image.channels() == 1) cv::cvtColor(image, tmp, cv::COLOR_GRAY2BGR);
-        else tmp = image;
-        tmp.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
-    }
-    else {
-        image.convertTo(img32f, CV_32FC3, 1.0 / 255.0);
+cv::Mat computeEnergyMap(const cv::Mat& image) {
+    // Convert to grayscale if needed
+    cv::Mat gray;
+    if (image.channels() == 3) {
+        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    } else {
+        gray = image.clone();
     }
 
-    // Per-channel Scharr gradients + small Laplacian texture boost
-    std::vector<cv::Mat> ch; cv::split(img32f, ch);
-    cv::Mat energy = cv::Mat::zeros(image.size(), CV_32F);
-    for (int c = 0; c < 3; ++c) {
-        cv::Mat gx, gy;
-        cv::Scharr(ch[c], gx, CV_32F, 1, 0);
-        cv::Scharr(ch[c], gy, CV_32F, 0, 1);
-        energy += gx.mul(gx) + gy.mul(gy);
+    // Compute gradients using Sobel filter
+    cv::Mat sobelX, sobelY;
+    cv::Sobel(gray, sobelX, CV_32F, 1, 0, 3);  // X gradient
+    cv::Sobel(gray, sobelY, CV_32F, 0, 1, 3);  // Y gradient
+
+    // Compute magnitude of gradients (energy)
+    cv::Mat energy(image.rows, image.cols, CV_32F);
+    for (int i = 0; i < image.rows; i++) {
+        for (int j = 0; j < image.cols; j++) {
+            float dx = sobelX.at<float>(i, j);
+            float dy = sobelY.at<float>(i, j);
+            energy.at<float>(i, j) = std::sqrt(dx * dx + dy * dy);
+        }
     }
-    cv::sqrt(energy, energy);
 
-    // Add Laplacian component to protect fine details
-    cv::Mat gray, lap, absLap;
-    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-    cv::Laplacian(gray, lap, CV_32F, 3);
-    cv::absdiff(lap, 0, absLap);
-    energy += 0.2f * absLap;
-
-    cv::GaussianBlur(energy, energy, cv::Size(3, 3), 0);
     return energy;
 }
 
@@ -84,50 +76,46 @@ std::vector<int> findVerticalSeamDP(const cv::Mat& energy) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GREEDY SEAM FINDING (Improved Lookahead Version)
+// GREEDY SEAM FINDING (Pure Greedy - Local Decisions Only)
 // ═══════════════════════════════════════════════════════════════════════════
 
-std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy, int lookaheadDepth = 3) {
+std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
     const int rows = energy.rows, cols = energy.cols;
     std::vector<int> seam(rows);
 
+    // Start at global min in top row
     int currentCol = 0;
     float best = energy.at<float>(0, 0);
     for (int j = 1; j < cols; ++j) {
         float v = energy.at<float>(0, j);
-        if (v < best) { best = v; currentCol = j; }
+        if (v < best) {
+            best = v;
+            currentCol = j;
+        }
     }
     seam[0] = currentCol;
 
-    auto estimatePathEnergy = [&](int startRow, int startCol, int depth) {
-        float total = 0.f;
-        int col = startCol;
-        for (int d = 0; d < depth && (startRow + d) < rows; ++d) {
-            float bestE = FLT_MAX;
-            int bestC = col;
-            for (int k = col - 1; k <= col + 1; ++k) {
-                if (k >= 0 && k < cols) {
-                    float e = energy.at<float>(startRow + d, k);
-                    if (e < bestE) { bestE = e; bestC = k; }
-                }
-            }
-            total += bestE;
-            col = bestC;
-        }
-        return total;
-        };
-
+    // For each subsequent row, pick the minimum energy neighbor
+    // This is the GREEDY part - only looks at current row, not ahead
     for (int i = 1; i < rows; ++i) {
         int bestCol = currentCol;
-        float bestFuture = FLT_MAX;
+        float minEnergy = FLT_MAX;
+
+        // Check the three valid neighbors from current position
         for (int k = currentCol - 1; k <= currentCol + 1; ++k) {
-            if (k < 0 || k >= cols) continue;
-            float future = estimatePathEnergy(i, k, lookaheadDepth);
-            if (future < bestFuture) { bestFuture = future; bestCol = k; }
+            if (k >= 0 && k < cols) {
+                float e = energy.at<float>(i, k);  // Only current pixel energy!
+                if (e < minEnergy) {
+                    minEnergy = e;
+                    bestCol = k;
+                }
+            }
         }
+
         seam[i] = bestCol;
         currentCol = bestCol;
     }
+
     return seam;
 }
 
@@ -187,7 +175,7 @@ Stats seamCarveWithStats(cv::Mat& img, int targetWidth, bool useDP) {
     for (int i = 0; i < seams; i++) {
         cv::Mat energy = computeEnergyMap(img);
         std::vector<int> seam = useDP ?
-            findVerticalSeamDP(energy) : findVerticalSeamGreedy(energy, 5);
+            findVerticalSeamDP(energy) : findVerticalSeamGreedy(energy);
 
         s.totalEnergy += calculateSeamEnergy(energy, seam);
         s.seamsRemoved++;
@@ -230,12 +218,12 @@ int main() {
 
     // --- GREEDY ---
     cv::Mat greedyImg = original.clone();
-    std::cout << "\nRunning GREEDY (lookahead=5)...\n";
+    std::cout << "\nRunning GREEDY...\n";
     Stats gr = seamCarveWithStats(greedyImg, targetWidth, false);
 
     // --- Results ---
     std::cout << "                        RESULTS                            \n";
-    printf(" Metric              |DP              |Greedy (lookahead)  \n");
+    printf(" Metric              |DP              |Greedy  \n");
     printf(" Time (ms)          │ %-13lld │ %-18lld \n", dp.timeMs, gr.timeMs);
     float dpAvg = dp.totalEnergy / dp.seamsRemoved;
     float grAvg = gr.totalEnergy / gr.seamsRemoved;
@@ -245,7 +233,7 @@ int main() {
     // --- Single seam visualization ---
     cv::Mat energy = computeEnergyMap(original);
     auto dpSeam = findVerticalSeamDP(energy);
-    auto grSeam = findVerticalSeamGreedy(energy, 5);
+    auto grSeam = findVerticalSeamGreedy(energy);
 
     cv::Mat dpVis = visualizeSeam(original, dpSeam, cv::Scalar(0, 255, 0));
     cv::Mat grVis = visualizeSeam(original, grSeam, cv::Scalar(0, 0, 255));

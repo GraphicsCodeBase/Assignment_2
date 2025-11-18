@@ -52,9 +52,10 @@ cv::Mat computeEnergyMap(const cv::Mat& image) {
 }
 
 
-// Step 2: Find vertical seam using GREEDY ALGORITHM
+// Step 2: Find vertical seam using PURE GREEDY ALGORITHM
 // At each row, simply pick the minimum energy pixel among the three valid neighbors
-std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy, int lookaheadDepth = 3) {
+// This is a LOCAL decision - only considers current pixel energy, not future rows
+std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
     const int rows = energy.rows, cols = energy.cols;
     std::vector<int> seam(rows);
 
@@ -63,39 +64,34 @@ std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy, int lookaheadDept
     float best = energy.at<float>(0, 0);
     for (int j = 1; j < cols; ++j) {
         float v = energy.at<float>(0, j);
-        if (v < best) { best = v; currentCol = j; }
+        if (v < best) {
+            best = v;
+            currentCol = j;
+        }
     }
     seam[0] = currentCol;
 
-    auto estimatePathEnergy = [&](int startRow, int startCol, int depth) {
-        float total = 0.f;
-        int col = startCol;
-        for (int d = 0; d < depth && (startRow + d) < rows; ++d) {
-            float bestE = std::numeric_limits<float>::infinity();
-            int bestC = col;
-            for (int k = col - 1; k <= col + 1; ++k) {
-                if (k >= 0 && k < cols) {
-                    float e = energy.at<float>(startRow + d, k);
-                    if (e < bestE) { bestE = e; bestC = k; }
-                }
-            }
-            total += bestE;
-            col = bestC;
-        }
-        return total;
-        };
-
+    // For each subsequent row, pick the minimum energy neighbor
+    // This is the GREEDY part - only looks at current row, not ahead
     for (int i = 1; i < rows; ++i) {
         int bestCol = currentCol;
-        float bestFuture = std::numeric_limits<float>::infinity();
+        float minEnergy = std::numeric_limits<float>::infinity();
+
+        // Check the three valid neighbors from current position
         for (int k = currentCol - 1; k <= currentCol + 1; ++k) {
-            if (k < 0 || k >= cols) continue;
-            float future = estimatePathEnergy(i, k, lookaheadDepth);
-            if (future < bestFuture) { bestFuture = future; bestCol = k; }
+            if (k >= 0 && k < cols) {
+                float e = energy.at<float>(i, k);  // Only current pixel energy!
+                if (e < minEnergy) {
+                    minEnergy = e;
+                    bestCol = k;
+                }
+            }
         }
+
         seam[i] = bestCol;
         currentCol = bestCol;
     }
+
     return seam;
 }
 
@@ -167,7 +163,7 @@ cv::Mat seamCarveGreedy(cv::Mat image, int targetWidth, int targetHeight) {
             std::cout << "  Vertical seam " << (i + 1) << "/" << verticalSeamsToRemove << "\n";
         }
         cv::Mat energy = computeEnergyMap(image);
-        std::vector<int> seam = findVerticalSeamGreedy(energy, 5);
+        std::vector<int> seam = findVerticalSeamGreedy(energy);
 
         // Track seam energy for statistics
         totalSeamEnergy += calculateSeamEnergy(energy, seam);
