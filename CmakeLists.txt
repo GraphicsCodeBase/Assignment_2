@@ -14,7 +14,7 @@ find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
 # ═══════════════════════════════════════════════════════════════════════════
 # EXECUTABLE 1: Original Dynamic Programming Implementation
 # ═══════════════════════════════════════════════════════════════════════════
-add_executable(Seam_Carving_DP main.cpp)
+add_executable(Seam_Carving_DP main.cpp "seam_carving_bonus.h" "seam_carving_bonus.cpp")
 
 target_link_libraries(Seam_Carving_DP PRIVATE
     ${OpenCV_LIBS}

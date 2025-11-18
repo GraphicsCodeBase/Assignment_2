@@ -5,6 +5,8 @@
 #include <cmath>
 #include <algorithm>
 #include <filesystem>
+#include <chrono>
+#include "seam_carving_bonus.h"
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SEAM CARVING ALGORITHM IMPLEMENTATION
@@ -16,7 +18,8 @@ cv::Mat computeEnergyMap(const cv::Mat& image) {
     cv::Mat gray;
     if (image.channels() == 3) {
         cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-    } else {
+    }
+    else {
         gray = image.clone();
     }
 
@@ -100,7 +103,8 @@ cv::Mat removeVerticalSeam(const cv::Mat& image, const std::vector<int>& seam) {
             if (j != seamCol) {
                 if (image.channels() == 3) {
                     result.at<cv::Vec3b>(i, k++) = image.at<cv::Vec3b>(i, j);
-                } else {
+                }
+                else {
                     result.at<uint8_t>(i, k++) = image.at<uint8_t>(i, j);
                 }
             }
@@ -123,16 +127,16 @@ cv::Mat removeHorizontalSeam(const cv::Mat& image) {
     rotated = removeVerticalSeam(rotated, seam);
 
     // Rotate back 90 degrees counterclockwise
-    cv::flip(rotated, rotated, 0);
+    cv::flip(rotated, rotated, 1);  // Changed from flip(0) to flip(1)
     cv::transpose(rotated, rotated);
 
     return rotated;
 }
 
-// Main seam carving function
+// Main seam carving function (non-visualization version)
 cv::Mat seamCarve(cv::Mat image, int targetWidth, int targetHeight) {
     std::cout << "Carving from " << image.cols << "x" << image.rows
-              << " to " << targetWidth << "x" << targetHeight << "\n";
+        << " to " << targetWidth << "x" << targetHeight << "\n";
 
     // Remove vertical seams
     int verticalSeamsToRemove = image.cols - targetWidth;
@@ -218,20 +222,21 @@ cv::Mat createComparison(const cv::Mat& original, const cv::Mat& current) {
 
     // Add labels
     cv::putText(comparison, "ORIGINAL", cv::Point(10, 30),
-                cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
+        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
     cv::putText(comparison, "CURRENT", cv::Point(orig_resized.cols + 30, 30),
-                cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
+        cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 255, 255), 2);
 
     return comparison;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MAIN APPLICATION (Simple OpenCV-based UI with keyboard controls)
+// MAIN APPLICATION (Enhanced with Bonus Features)
 // ═══════════════════════════════════════════════════════════════════════════
 
 int main(int argc, char* argv[]) {
     std::cout << "\n╔══════════════════════════════════════╗\n";
     std::cout << "║   SEAM CARVING APPLICATION          ║\n";
+    std::cout << "║   WITH BONUS FEATURES!              ║\n";
     std::cout << "║   Working dir: " << std::filesystem::current_path().string().substr(0, 20) << "...║\n";
     std::cout << "╚══════════════════════════════════════╝\n\n";
 
@@ -249,111 +254,221 @@ int main(int argc, char* argv[]) {
     bool running = true;
 
     // Create resizable window that fits on screen
-    // WINDOW_NORMAL allows resizing and moving
     cv::namedWindow("Seam Carving Tool", cv::WINDOW_NORMAL | cv::WINDOW_GUI_NORMAL);
-    cv::resizeWindow("Seam Carving Tool", 1200, 800);  // Set initial size
-    cv::moveWindow("Seam Carving Tool", 100, 100);    // Set initial position (top-left)
+    cv::resizeWindow("Seam Carving Tool", 1200, 800);
+    cv::moveWindow("Seam Carving Tool", 100, 100);
+
+    // Visualization settings for bonus features
+    VisualizationSettings visSettings;
 
     std::cout << "Window created at position (100, 100) with size 1200x800\n";
-    std::cout << "You can now drag the window by its title bar!\n";
-    std::cout << "Resize by dragging the edges/corners\n\n";
+    std::cout << "You can now drag the window by its title bar!\n\n";
 
     displayImageScaled("Seam Carving Tool", currentImage);
-    cv::pollKey();  // Non-blocking key check
+    cv::pollKey();
 
     while (running) {
         std::cout << "\n╔════════════════════════════════════╗\n";
         std::cout << "║    SEAM CARVING MENU               ║\n";
         std::cout << "║    Current: " << currentImage.cols << "x" << currentImage.rows << "          ║\n";
         std::cout << "╠════════════════════════════════════╣\n";
+        std::cout << "║ BASIC OPERATIONS                   ║\n";
         std::cout << "║ [1] Custom size (width x height)   ║\n";
         std::cout << "║ [2] Reduce width by 100px          ║\n";
         std::cout << "║ [3] Reduce height by 100px         ║\n";
         std::cout << "║ [4] Reset to original              ║\n";
-        std::cout << "║ [5] Save result                    ║\n";
-        std::cout << "║ [6] Exit                           ║\n";
+        std::cout << "║                                    ║\n";
+        std::cout << "║ BONUS FEATURES ⭐                  ║\n";
+        std::cout << "║ [5] Seam carving WITH visualization║\n";
+        std::cout << "║ [6] Interactive mouse selection    ║\n";
+        std::cout << "║ [7] Step-by-step mode              ║\n";
+        std::cout << "║ [8] Preset aspect ratios           ║\n";
+        std::cout << "║ [9] Visualization settings         ║\n";
+        std::cout << "║                                    ║\n";
+        std::cout << "║ FILE OPERATIONS                    ║\n";
+        std::cout << "║ [S] Save result                    ║\n";
+        std::cout << "║ [V] Save with visualizations       ║\n";
+        std::cout << "║ [Q] Exit                           ║\n";
         std::cout << "╚════════════════════════════════════╝\n";
-        std::cout << "TIP: While typing, the window is still responsive!\n";
-        std::cout << "You can move/resize it while entering your choice.\n";
-        std::cout << "Enter choice (1-6): ";
+        std::cout << "Enter choice: ";
 
-        int choice;
+        std::string choice;
         std::cin >> choice;
 
-        switch (choice) {
-            case 1: {
-                int width, height;
-                std::cout << "Enter target width (100-" << originalImage.cols << "): ";
-                std::cin >> width;
-                std::cout << "Enter target height (100-" << originalImage.rows << "): ";
-                std::cin >> height;
+        if (choice == "1") {
+            int width, height;
+            std::cout << "Enter target width (100-" << originalImage.cols << "): ";
+            std::cin >> width;
+            std::cout << "Enter target height (100-" << originalImage.rows << "): ";
+            std::cin >> height;
 
-                if (width < 100 || height < 100) {
-                    std::cout << "Error: Minimum size is 100x100\n";
-                    break;
+            if (width < 100 || height < 100) {
+                std::cout << "Error: Minimum size is 100x100\n";
+                continue;
+            }
+            if (width > currentImage.cols || height > currentImage.rows) {
+                std::cout << "Error: Can only reduce size, not enlarge\n";
+                continue;
+            }
+
+            std::cout << "\nProcessing (this may take a moment)...\n";
+            auto start = std::chrono::high_resolution_clock::now();
+
+            currentImage = seamCarve(currentImage, width, height);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+            std::cout << "Time taken: " << duration.count() << "ms\n";
+            std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
+            cv::Mat comparison = createComparison(originalImage, currentImage);
+            displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
+        }
+        else if (choice == "2") {
+            int newWidth = std::max(100, currentImage.cols - 100);
+            std::cout << "\nProcessing...\n";
+            currentImage = seamCarve(currentImage, newWidth, currentImage.rows);
+            std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
+            cv::Mat comparison = createComparison(originalImage, currentImage);
+            displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
+        }
+        else if (choice == "3") {
+            int newHeight = std::max(100, currentImage.rows - 100);
+            std::cout << "\nProcessing...\n";
+            currentImage = seamCarve(currentImage, currentImage.cols, newHeight);
+            std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
+            cv::Mat comparison = createComparison(originalImage, currentImage);
+            displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
+        }
+        else if (choice == "4") {
+            currentImage = originalImage.clone();
+            std::cout << "✓ Reset to original (" << currentImage.cols << "x" << currentImage.rows << ")\n";
+            displayImageScaled("Seam Carving Tool", currentImage, 1600, 900, true);
+        }
+        // ===== BONUS FEATURES =====
+        else if (choice == "5") {
+            int width, height;
+            std::cout << "Enter target width (100-" << currentImage.cols << "): ";
+            std::cin >> width;
+            std::cout << "Enter target height (100-" << currentImage.rows << "): ";
+            std::cin >> height;
+
+            if (width < 100 || height < 100) {
+                std::cout << "Error: Minimum size is 100x100\n";
+                continue;
+            }
+            if (width > currentImage.cols || height > currentImage.rows) {
+                std::cout << "Error: Can only reduce size, not enlarge\n";
+                continue;
+            }
+
+            std::cout << "\nStarting INTERACTIVE visualization mode...\n";
+            auto start = std::chrono::high_resolution_clock::now();
+
+            currentImage = seamCarveWithVisualization(currentImage, width, height,
+                "Seam Carving Tool", visSettings);
+
+            auto end = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+            std::cout << "Time taken: " << duration.count() << "ms\n";
+            cv::Mat comparison = createComparison(originalImage, currentImage);
+            displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
+        }
+        else if (choice == "6") {
+            std::cout << "\n✓ Entering MOUSE SELECTION mode...\n";
+            displayImageScaled("Seam Carving Tool", currentImage, 1400, 800, false);
+
+            cv::Rect selection = interactiveMouseSelection(currentImage, "Seam Carving Tool");
+
+            if (selection.width > 0 && selection.height > 0) {
+                std::cout << "Selected dimensions: " << selection.width << "x" << selection.height << "\n";
+                std::cout << "Apply seam carving to these dimensions? (y/n): ";
+                char confirm;
+                std::cin >> confirm;
+
+                if (confirm == 'y' || confirm == 'Y') {
+                    std::cout << "\nStarting visualization...\n";
+                    currentImage = seamCarveWithVisualization(currentImage, selection.width,
+                        selection.height,
+                        "Seam Carving Tool", visSettings);
+                    cv::Mat comparison = createComparison(originalImage, currentImage);
+                    displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
                 }
-                if (width > currentImage.cols || height > currentImage.rows) {
-                    std::cout << "Error: Can only reduce size, not enlarge\n";
-                    break;
+            }
+            else {
+                std::cout << "Selection cancelled.\n";
+            }
+        }
+        else if (choice == "7") {
+            std::cout << "\n✓ Entering STEP-BY-STEP mode...\n";
+            displayImageScaled("Seam Carving Tool", currentImage, 1400, 800, false);
+            runStepByStepMode(currentImage, "Seam Carving Tool");
+            std::cout << "Exited step-by-step mode.\n";
+        }
+        else if (choice == "8") {
+            std::cout << "\nPRESET ASPECT RATIOS:\n";
+            std::cout << "[1] 16:9 (Widescreen)\n";
+            std::cout << "[2] 4:3 (Standard)\n";
+            std::cout << "[3] 1:1 (Square)\n";
+            std::cout << "[4] 50% reduction\n";
+            std::cout << "Choose preset: ";
+
+            int preset;
+            std::cin >> preset;
+
+            int targetWidth, targetHeight;
+            if (calculatePresetDimensions(currentImage.cols, currentImage.rows, preset,
+                targetWidth, targetHeight)) {
+                std::cout << "Target dimensions: " << targetWidth << "x" << targetHeight << "\n";
+                std::cout << "Apply with visualization? (y/n): ";
+                char confirm;
+                std::cin >> confirm;
+
+                if (confirm == 'y' || confirm == 'Y') {
+                    currentImage = seamCarveWithVisualization(currentImage, targetWidth,
+                        targetHeight,
+                        "Seam Carving Tool", visSettings);
+                    cv::Mat comparison = createComparison(originalImage, currentImage);
+                    displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);
                 }
+            }
+            else {
+                std::cout << "Invalid preset!\n";
+            }
+        }
+        else if (choice == "9") {
+            handleVisualizationSettings(visSettings);
+        }
+        // ===== FILE OPERATIONS =====
+        else if (choice == "s" || choice == "S") {
+            std::string filename = "output_" + std::to_string(currentImage.cols) + "x" +
+                std::to_string(currentImage.rows) + ".jpg";
+            if (cv::imwrite(filename, currentImage)) {
+                std::cout << "✓ Saved to: " << filename << "\n";
+            }
+            else {
+                std::cout << "✗ Error: Could not save file\n";
+            }
+        }
+        else if (choice == "v" || choice == "V") {
+            std::cout << "Enter base filename (without extension): ";
+            std::string baseFilename;
+            std::cin >> baseFilename;
 
-                std::cout << "\nProcessing (this may take a moment)...\n";
-                auto start = std::chrono::high_resolution_clock::now();
-
-                currentImage = seamCarve(currentImage, width, height);
-
-                auto end = std::chrono::high_resolution_clock::now();
-                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
-                std::cout << "Time taken: " << duration.count() << "ms\n";
-                std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
-                cv::Mat comparison = createComparison(originalImage, currentImage);
-                displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);  // true = interactive
-                break;
+            if (saveWithVisualizationExamples(currentImage, baseFilename)) {
+                std::cout << "✓ All files saved successfully!\n";
             }
-            case 2: {
-                int newWidth = std::max(100, currentImage.cols - 100);
-                std::cout << "\nProcessing...\n";
-                currentImage = seamCarve(currentImage, newWidth, currentImage.rows);
-                std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
-                cv::Mat comparison = createComparison(originalImage, currentImage);
-                displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);  // true = interactive
-                break;
+            else {
+                std::cout << "✗ Error saving files\n";
             }
-            case 3: {
-                int newHeight = std::max(100, currentImage.rows - 100);
-                std::cout << "\nProcessing...\n";
-                currentImage = seamCarve(currentImage, currentImage.cols, newHeight);
-                std::cout << "✓ Showing SIDE-BY-SIDE comparison (Original | Current)\n";
-                cv::Mat comparison = createComparison(originalImage, currentImage);
-                displayImageScaled("Seam Carving Tool", comparison, 1600, 900, true);  // true = interactive
-                break;
-            }
-            case 4: {
-                currentImage = originalImage.clone();
-                std::cout << "✓ Reset to original (" << currentImage.cols << "x" << currentImage.rows << ")\n";
-                displayImageScaled("Seam Carving Tool", currentImage, 1600, 900, true);  // true = interactive
-                std::cout << "Showing original image only (no comparison)\n";
-                break;
-            }
-            case 5: {
-                std::string filename = "output_" + std::to_string(currentImage.cols) + "x" +
-                                      std::to_string(currentImage.rows) + ".jpg";
-                if (cv::imwrite(filename, currentImage)) {
-                    std::cout << "✓ Saved to: " << filename << "\n";
-                } else {
-                    std::cout << "✗ Error: Could not save file\n";
-                }
-                break;
-            }
-            case 6: {
-                running = false;
-                std::cout << "\n✓ Goodbye!\n";
-                break;
-            }
-            default: {
-                std::cout << "✗ Invalid choice! Enter 1-6.\n";
-            }
+        }
+        else if (choice == "q" || choice == "Q") {
+            running = false;
+           
+        }
+        else {
+            std::cout << "✗ Invalid choice!\n";
         }
     }
 
