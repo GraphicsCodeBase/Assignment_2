@@ -1,0 +1,52 @@
+Original Size: 960x651 pixels
+Target Size: 700x500 pixels
+Vertical Seams Removed: 260
+Horizontal Seams Removed: 151
+Total Seams Removed: 411
+DP Time (ms): 36499
+Greedy Time (ms): 20367
+Speedup: 1.79x
+DP Avg Energy: 13602.11
+Greedy Avg Energy: 26568.32
+Quality Difference: 95.32%
+---
+
+Original Size: 960x651 pixels
+Target Size: 540x400 pixels
+Vertical Seams Removed: 420
+Horizontal Seams Removed: 251
+Total Seams Removed: 671
+DP Time (ms): 49567
+Greedy Time (ms): 27999
+Speedup: 1.77x
+DP Avg Energy: 15353.59
+Greedy Avg Energy: 23030.56
+Quality Difference: 50.00%
+---
+
+Original Size: 960x651 pixels
+Target Size: 500x300 pixels
+Vertical Seams Removed: 460
+Horizontal Seams Removed: 351
+Total Seams Removed: 811
+DP Time (ms): 54844
+Greedy Time (ms): 33396
+Speedup: 1.64x
+DP Avg Energy: 16882.48
+Greedy Avg Energy: 24555.52
+Quality Difference: 45.45%
+---
+
+Original Size: 960x651 pixels
+Target Size: 500x300 pixels
+Vertical Seams Removed: 460
+Horizontal Seams Removed: 351
+Total Seams Removed: 811
+DP Time (ms): 53925
+Greedy Time (ms): 32566
+Speedup: 1.66x
+DP Avg Energy: 16882.48
+Greedy Avg Energy: 24555.52
+Quality Difference: 45.45%
+---
+

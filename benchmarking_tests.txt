@@ -1,0 +1,200 @@
+       DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON
+Image loaded: 960x651
+Enter target width (< 960): 700
+Enter target height (< 651): 500
+
+Running DYNAMIC PROGRAMMING...
+
+Running GREEDY ALGORITHM...
+
++==================================================================+
+|    DP vs GREEDY ALGORITHM - DETAILED PERFORMANCE ANALYSIS      |
++==================================================================+
+
+TEST CONFIGURATION:
+  Original image:        960x651 pixels
+  Target image:          700x500 pixels
+  Vertical seams removed: 260
+  Horizontal seams removed: 151
+  Total seams removed:   411
+
++--------- EXECUTION TIME COMPARISON ---------+
+  DP Algorithm                     36499 ms
+  Greedy Algorithm                 20367 ms
+  Difference                       16132 ms
+  Speedup Factor: Greedy is 1.79x faster
+
++------------ SEAM ENERGY STATISTICS -----------+
+Metric                                        DP           Greedy
+------------------------------------------------------------------
+Total Energy:                        5590467.50      10919580.00
+Average per Seam:                      13602.11         26568.32
+Minimum Seam Energy:                    2633.83         15179.98
+Maximum Seam Energy:                   23483.68         54987.80
+
++----------- QUALITY ANALYSIS ----------+
+  Quality Gap: 95.32% (Greedy seams have higher energy - lower quality)
+  ✓ DP produces better quality seams
+  ✗ Greedy produces lower quality seams
+
++------ TIME BREAKDOWN (% of Total) ------+
+  DP Algorithm:
+    Energy computation:   36.9% (13452 ms)
+    Seam finding:         63.1% (23047 ms)
+
+  Greedy Algorithm:
+    Energy computation:   65.2% (13273 ms)
+    Seam finding:         34.8% (7094 ms)
+
++==================================================================+
+SUMMARY & RECOMMENDATION:
+  DP Advantages:
+    • Guaranteed optimal seams
+    • Lower average seam energy: 13602.11
+    • Better visual quality
+
+  Greedy Advantages:
+    • Faster execution (1.79x speedup)
+    • Lower memory usage
+    • Simple implementation
+
+  RECOMMENDATION: Use DP for best quality
++==================================================================+
+
+Stats saved to: benchmark_results.txt
+
+ Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg
+
+
+
+        DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON
+Image loaded: 960x651
+Enter target width (< 960): 540
+Enter target height (< 651): 400
+
+Running DYNAMIC PROGRAMMING...
+
+Running GREEDY ALGORITHM...
+
++==================================================================+
+|    DP vs GREEDY ALGORITHM - DETAILED PERFORMANCE ANALYSIS      |
++==================================================================+
+
+TEST CONFIGURATION:
+  Original image:        960x651 pixels
+  Target image:          540x400 pixels
+  Vertical seams removed: 420
+  Horizontal seams removed: 251
+  Total seams removed:   671
+
++--------- EXECUTION TIME COMPARISON ---------+
+  DP Algorithm                     49567 ms
+  Greedy Algorithm                 27999 ms
+  Difference                       21568 ms
+  Speedup Factor: Greedy is 1.77x faster
+
++------------ SEAM ENERGY STATISTICS -----------+
+Metric                                        DP           Greedy
+------------------------------------------------------------------
+Total Energy:                       10302257.00      15453507.00
+Average per Seam:                      15353.59         23030.56
+Minimum Seam Energy:                    2033.40         14249.76
+Maximum Seam Energy:                   26091.60         41374.65
+
++----------- QUALITY ANALYSIS ----------+
+  Quality Gap: 50.00% (Greedy seams have higher energy - lower quality)
+  ✓ DP produces better quality seams
+  ✗ Greedy produces lower quality seams
+
++------ TIME BREAKDOWN (% of Total) ------+
+  DP Algorithm:
+    Energy computation:   36.8% (18238 ms)
+    Seam finding:         63.2% (31329 ms)
+
+  Greedy Algorithm:
+    Energy computation:   65.4% (18300 ms)
+    Seam finding:         34.6% (9699 ms)
+
++==================================================================+
+SUMMARY & RECOMMENDATION:
+  DP Advantages:
+    • Guaranteed optimal seams
+    • Lower average seam energy: 15353.59
+    • Better visual quality
+
+  Greedy Advantages:
+    • Faster execution (1.77x speedup)
+    • Lower memory usage
+    • Simple implementation
+
+  RECOMMENDATION: Use DP for best quality
++==================================================================+
+
+Stats saved to: benchmark_results.txt
+
+ DYNAMIC PROGRAMMING  vs  GREEDY COMPARISON
+Image loaded: 960x651
+Enter target width (< 960): 500
+Enter target height (< 651): 300
+
+Running DYNAMIC PROGRAMMING...
+
+Running GREEDY ALGORITHM...
+
++==================================================================+
+|    DP vs GREEDY ALGORITHM - DETAILED PERFORMANCE ANALYSIS      |
++==================================================================+
+
+TEST CONFIGURATION:
+  Original image:        960x651 pixels
+  Target image:          500x300 pixels
+  Vertical seams removed: 460
+  Horizontal seams removed: 351
+  Total seams removed:   811
+
++--------- EXECUTION TIME COMPARISON ---------+
+  DP Algorithm                     53925 ms
+  Greedy Algorithm                 32566 ms
+  Difference                       21359 ms
+  Speedup Factor: Greedy is 1.66x faster
+
++------------ SEAM ENERGY STATISTICS -----------+
+Metric                                        DP           Greedy
+------------------------------------------------------------------
+Total Energy:                       13691695.00      19914528.00
+Average per Seam:                      16882.48         24555.52
+Minimum Seam Energy:                    1866.19         14192.86
+Maximum Seam Energy:                   30693.67         55186.95
+
++----------- QUALITY ANALYSIS ----------+
+  Quality Gap: 45.45% (Greedy seams have higher energy - lower quality)
+  ✓ DP produces better quality seams
+  ✗ Greedy produces lower quality seams
+
++------ TIME BREAKDOWN (% of Total) ------+
+  DP Algorithm:
+    Energy computation:   36.9% (19903 ms)
+    Seam finding:         63.1% (34022 ms)
+
+  Greedy Algorithm:
+    Energy computation:   65.6% (21353 ms)
+    Seam finding:         34.4% (11213 ms)
+
++==================================================================+
+SUMMARY & RECOMMENDATION:
+  DP Advantages:
+    • Guaranteed optimal seams
+    • Lower average seam energy: 16882.48
+    • Better visual quality
+
+  Greedy Advantages:
+    • Faster execution (1.66x speedup)
+    • Lower memory usage
+    • Simple implementation
+
+  RECOMMENDATION: Use DP for best quality
++==================================================================+
+
+Stats saved to: benchmark_results.txt
+
+ Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg

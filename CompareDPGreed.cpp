@@ -348,7 +348,8 @@ void printDetailedStats(const Stats& dp, const Stats& gr, int originalWidth, int
 // Function to save stats to file for your report
 void saveStatsToFile(const Stats& dp, const Stats& gr, int originalWidth, int originalHeight,
                      int targetWidth, int targetHeight, const std::string& filename) {
-    std::ofstream file(filename, std::ios::app);
+    std::string filepath = "../../../" + filename;
+    std::ofstream file(filepath, std::ios::app);
 
     file << "Original Size: " << originalWidth << "x" << originalHeight << " pixels\n";
     file << "Target Size: " << targetWidth << "x" << targetHeight << " pixels\n";
@@ -454,10 +455,10 @@ int main() {
     cv::imshow("Result Comparison", resultComparison);
 
     // Save all outputs
-    cv::imwrite("dp_result.jpg", dpImg);
-    cv::imwrite("greedy_result.jpg", greedyImg);
-    cv::imwrite("seam_comparison.jpg", seamComparison);
-    cv::imwrite("final_comparison_with_separator.jpg", resultComparison);
+    cv::imwrite("../../../dp_result.jpg", dpImg);
+    cv::imwrite("../../../greedy_result.jpg", greedyImg);
+    cv::imwrite("../../../seam_comparison.jpg", seamComparison);
+    cv::imwrite("../../../final_comparison_with_separator.jpg", resultComparison);
 
     std::cout << "\n Saved: dp_result.jpg, greedy_result.jpg, seam_comparison.jpg, final_comparison_with_separator.jpg\n";
     cv::waitKey(0);
