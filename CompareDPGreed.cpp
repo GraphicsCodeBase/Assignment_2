@@ -7,9 +7,9 @@
 #include <filesystem>
 #include <chrono>
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // ENERGY MAP COMPUTATION (Shared by DP & Greedy)
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 cv::Mat computeEnergyMap(const cv::Mat& image) {
     // Convert to grayscale if needed
@@ -38,9 +38,9 @@ cv::Mat computeEnergyMap(const cv::Mat& image) {
     return energy;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // DYNAMIC PROGRAMMING SEAM FINDING
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 std::vector<int> findVerticalSeamDP(const cv::Mat& energy) {
     int rows = energy.rows, cols = energy.cols;
@@ -75,9 +75,9 @@ std::vector<int> findVerticalSeamDP(const cv::Mat& energy) {
     return seam;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // GREEDY SEAM FINDING (Pure Greedy - Local Decisions Only)
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
     const int rows = energy.rows, cols = energy.cols;
@@ -119,9 +119,9 @@ std::vector<int> findVerticalSeamGreedy(const cv::Mat& energy) {
     return seam;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // COMMON UTILITIES
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 float calculateSeamEnergy(const cv::Mat& energy, const std::vector<int>& seam) {
     float total = 0.f;
@@ -157,9 +157,9 @@ cv::Mat visualizeSeam(const cv::Mat& img, const std::vector<int>& seam, cv::Scal
     return vis;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SEAM CARVING COMPARISON LOGIC
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 struct Stats {
     long long timeMs;
@@ -188,9 +188,9 @@ Stats seamCarveWithStats(cv::Mat& img, int targetWidth, bool useDP) {
     return s;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // MAIN
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 int main() {
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_SILENT);
@@ -224,11 +224,11 @@ int main() {
     // --- Results ---
     std::cout << "                        RESULTS                            \n";
     printf(" Metric              |DP              |Greedy  \n");
-    printf(" Time (ms)          │ %-13lld │ %-18lld \n", dp.timeMs, gr.timeMs);
+    printf(" Time (ms)          | %-13lld | %-18lld \n", dp.timeMs, gr.timeMs);
     float dpAvg = dp.totalEnergy / dp.seamsRemoved;
     float grAvg = gr.totalEnergy / gr.seamsRemoved;
-    printf(" Avg Seam Energy    │ %-13.2f │ %-18.2f \n", dpAvg, grAvg);
-    printf(" Total Energy       │ %-13.2f │ %-18.2f \n", dp.totalEnergy, gr.totalEnergy);
+    printf(" Avg Seam Energy    | %-13.2f | %-18.2f \n", dpAvg, grAvg);
+    printf(" Total Energy       | %-13.2f | %-18.2f \n", dp.totalEnergy, gr.totalEnergy);
 
     // --- Single seam visualization ---
     cv::Mat energy = computeEnergyMap(original);

@@ -6,9 +6,9 @@
 #include <deque>
 #include <string>
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // BONUS FEATURES: VISUALIZATION AND INTERACTIVE TOOLS
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // Global visualization settings
 struct VisualizationSettings {
@@ -29,9 +29,9 @@ struct MouseData {
     cv::Rect selection;
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // VISUALIZATION FUNCTIONS
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Visualize energy map as a heatmap using colormap
@@ -70,9 +70,9 @@ cv::Mat drawMultipleSeams(const cv::Mat& image, const std::deque<std::vector<int
 cv::Mat createMultiPanelView(const cv::Mat& original, const cv::Mat& current,
     const cv::Mat& energy, const cv::Mat& seamVis);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // INTERACTIVE SEAM CARVING WITH VISUALIZATION
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Perform seam carving with real-time visualization
@@ -94,9 +94,9 @@ cv::Mat seamCarveWithVisualization(cv::Mat image, int targetWidth, int targetHei
     const std::string& windowName,
     VisualizationSettings& settings);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // INTERACTIVE MOUSE SELECTION
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Mouse callback function for interactive region selection
@@ -116,9 +116,9 @@ void mouseCallback(int event, int x, int y, int flags, void* userdata);
  */
 cv::Rect interactiveMouseSelection(const cv::Mat& image, const std::string& windowName);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // STEP-BY-STEP MODE
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Run step-by-step interactive mode for seam removal
@@ -132,9 +132,9 @@ cv::Rect interactiveMouseSelection(const cv::Mat& image, const std::string& wind
  */
 void runStepByStepMode(cv::Mat& image, const std::string& windowName);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // BATCH RESIZE PRESETS
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Calculate target dimensions based on preset aspect ratios
@@ -148,9 +148,9 @@ void runStepByStepMode(cv::Mat& image, const std::string& windowName);
 bool calculatePresetDimensions(int currentWidth, int currentHeight, int preset,
     int& targetWidth, int& targetHeight);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // VISUALIZATION SETTINGS MENU
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Display and handle visualization settings menu
@@ -158,9 +158,9 @@ bool calculatePresetDimensions(int currentWidth, int currentHeight, int preset,
  */
 void handleVisualizationSettings(VisualizationSettings& settings);
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SAVE WITH VISUALIZATION EXAMPLES
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 /**
  * @brief Save current image along with visualization examples

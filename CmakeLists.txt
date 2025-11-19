@@ -11,9 +11,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Find all required packages
 find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
 
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 # EXECUTABLE 1: Original Dynamic Programming Implementation
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 add_executable(Seam_Carving_DP main.cpp "seam_carving_bonus.h" "seam_carving_bonus.cpp")
 
 target_link_libraries(Seam_Carving_DP PRIVATE
@@ -24,9 +24,9 @@ target_include_directories(Seam_Carving_DP PRIVATE
     ${OpenCV_INCLUDE_DIRS}
 )
 
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 # EXECUTABLE 2: Greedy Algorithm Implementation
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 add_executable(Seam_Carving_Greedy GreedyAlgo.cpp)
 
 target_link_libraries(Seam_Carving_Greedy PRIVATE
@@ -37,9 +37,9 @@ target_include_directories(Seam_Carving_Greedy PRIVATE
     ${OpenCV_INCLUDE_DIRS}
 )
 
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 # EXECUTABLE 3: Comparison Tool (DP vs Greedy)
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 add_executable(Compare_Algorithms "CompareDPGreed.cpp")
 
 target_link_libraries(Compare_Algorithms PRIVATE
@@ -50,9 +50,9 @@ target_include_directories(Compare_Algorithms PRIVATE
     ${OpenCV_INCLUDE_DIRS}
 )
 
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 # Build Info
-# ═══════════════════════════════════════════════════════════════════════════
+# =======================================================================
 message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
 message(STATUS "OpenCV libs: ${OpenCV_LIBS}")
 message(STATUS "")

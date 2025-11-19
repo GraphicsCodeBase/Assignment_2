@@ -8,9 +8,9 @@
 #include <chrono>
 #include "seam_carving_bonus.h"
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // SEAM CARVING ALGORITHM IMPLEMENTATION
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // Step 1: Calculate energy map using Sobel filter
 cv::Mat computeEnergyMap(const cv::Mat& image) {
@@ -162,9 +162,9 @@ cv::Mat seamCarve(cv::Mat image, int targetWidth, int targetHeight) {
     return image;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // HELPER FUNCTION TO DISPLAY IMAGE SCALED TO FIT SCREEN
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 void displayImageScaled(const std::string& windowName, const cv::Mat& image, int maxWidth = 1400, int maxHeight = 800, bool interactive = false) {
     float scaleX = (float)maxWidth / image.cols;
@@ -229,16 +229,16 @@ cv::Mat createComparison(const cv::Mat& original, const cv::Mat& current) {
     return comparison;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // MAIN APPLICATION (Enhanced with Bonus Features)
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 int main(int argc, char* argv[]) {
-    std::cout << "\n╔══════════════════════════════════════╗\n";
-    std::cout << "║   SEAM CARVING APPLICATION          ║\n";
-    std::cout << "║   WITH BONUS FEATURES!              ║\n";
-    std::cout << "║   Working dir: " << std::filesystem::current_path().string().substr(0, 20) << "...║\n";
-    std::cout << "╚══════════════════════════════════════╝\n\n";
+    std::cout << "\n+======================================+\n";
+    std::cout << "|   SEAM CARVING APPLICATION          |\n";
+    std::cout << "|   WITH BONUS FEATURES!              |\n";
+    std::cout << "|   Working dir: " << std::filesystem::current_path().string().substr(0, 20) << "...|\n";
+    std::cout << "+======================================+\n\n";
 
     // Load image
     cv::Mat originalImage = cv::imread("../../../Images/tower.jpg");
@@ -268,28 +268,28 @@ int main(int argc, char* argv[]) {
     cv::pollKey();
 
     while (running) {
-        std::cout << "\n╔════════════════════════════════════╗\n";
-        std::cout << "║    SEAM CARVING MENU               ║\n";
-        std::cout << "║    Current: " << currentImage.cols << "x" << currentImage.rows << "          ║\n";
-        std::cout << "╠════════════════════════════════════╣\n";
-        std::cout << "║ BASIC OPERATIONS                   ║\n";
-        std::cout << "║ [1] Custom size (width x height)   ║\n";
-        std::cout << "║ [2] Reduce width by 100px          ║\n";
-        std::cout << "║ [3] Reduce height by 100px         ║\n";
-        std::cout << "║ [4] Reset to original              ║\n";
-        std::cout << "║                                    ║\n";
-        std::cout << "║ BONUS FEATURES ⭐                  ║\n";
-        std::cout << "║ [5] Seam carving WITH visualization║\n";
-        std::cout << "║ [6] Interactive mouse selection    ║\n";
-        std::cout << "║ [7] Step-by-step mode              ║\n";
-        std::cout << "║ [8] Preset aspect ratios           ║\n";
-        std::cout << "║ [9] Visualization settings         ║\n";
-        std::cout << "║                                    ║\n";
-        std::cout << "║ FILE OPERATIONS                    ║\n";
-        std::cout << "║ [S] Save result                    ║\n";
-        std::cout << "║ [V] Save with visualizations       ║\n";
-        std::cout << "║ [Q] Exit                           ║\n";
-        std::cout << "╚════════════════════════════════════╝\n";
+        std::cout << "\n+====================================+\n";
+        std::cout << "|    SEAM CARVING MENU               |\n";
+        std::cout << "|    Current: " << currentImage.cols << "x" << currentImage.rows << "          |\n";
+        std::cout << "+====================================+\n";
+        std::cout << "| BASIC OPERATIONS                   |\n";
+        std::cout << "| [1] Custom size (width x height)   |\n";
+        std::cout << "| [2] Reduce width by 100px          |\n";
+        std::cout << "| [3] Reduce height by 100px         |\n";
+        std::cout << "| [4] Reset to original              |\n";
+        std::cout << "|                                    |\n";
+        std::cout << "| BONUS FEATURES (STAR)              |\n";
+        std::cout << "| [5] Seam carving WITH visualization|\n";
+        std::cout << "| [6] Interactive mouse selection    |\n";
+        std::cout << "| [7] Step-by-step mode              |\n";
+        std::cout << "| [8] Preset aspect ratios           |\n";
+        std::cout << "| [9] Visualization settings         |\n";
+        std::cout << "|                                    |\n";
+        std::cout << "| FILE OPERATIONS                    |\n";
+        std::cout << "| [S] Save result                    |\n";
+        std::cout << "| [V] Save with visualizations       |\n";
+        std::cout << "| [Q] Exit                           |\n";
+        std::cout << "+====================================+\n";
         std::cout << "Enter choice: ";
 
         std::string choice;

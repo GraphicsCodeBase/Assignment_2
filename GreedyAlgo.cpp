@@ -6,9 +6,9 @@
 #include <algorithm>
 #include <filesystem>
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // GREEDY SEAM CARVING ALGORITHM IMPLEMENTATION
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 // Step 1: Calculate energy map using Sobel filter (same as DP version)
 // Stronger energy: sum of color-channel gradients + a small Laplacian texture term
@@ -189,9 +189,9 @@ cv::Mat seamCarveGreedy(cv::Mat image, int targetWidth, int targetHeight) {
     return image;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // HELPER FUNCTION TO DISPLAY IMAGE SCALED TO FIT SCREEN
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 void displayImageScaled(const std::string& windowName, const cv::Mat& image, int maxWidth = 1400, int maxHeight = 800, bool interactive = false) {
     float scaleX = (float)maxWidth / image.cols;
@@ -256,13 +256,13 @@ cv::Mat createComparison(const cv::Mat& original, const cv::Mat& current) {
     return comparison;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 // MAIN APPLICATION
-// ═══════════════════════════════════════════════════════════════════════════
+// =======================================================================
 
 int main(int argc, char* argv[]) {
     std::cout << "GREEDY SEAM CARVING APPLICATION    \n";
-    std::cout << "Working dir: " << std::filesystem::current_path().string().substr(0, 24) << "...║\n";
+    std::cout << "Working dir: " << std::filesystem::current_path().string().substr(0, 24) << "...|\n";
 
     // Load image
     cv::Mat originalImage = cv::imread("../../../Images/tower.jpg");
@@ -289,7 +289,7 @@ int main(int argc, char* argv[]) {
 
     while (running) {
         std::cout << "    GREEDY SEAM CARVING MENU           \n";
-        std::cout << "    Current: " << currentImage.cols << "x" << currentImage.rows << "            ║\n";
+        std::cout << "    Current: " << currentImage.cols << "x" << currentImage.rows << "            |\n";
         std::cout << "[1] Custom size (width x height)      \n";
         std::cout << "[2] Reduce width by 100px             \n";
         std::cout << "[3] Reduce height by 100px            \n";
