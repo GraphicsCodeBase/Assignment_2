@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Ensure CMake uses vcpkg toolchain
 # (Visual Studio will auto-pass this if you opened the CMake project via VS)
-# set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
+set(CMAKE_TOOLCHAIN_FILE "C:/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain")
 
 # Find all required packages
 find_package(OpenCV REQUIRED core imgproc highgui imgcodecs)
