@@ -10,7 +10,14 @@
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "cmakeToolchain": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      "cmakeToolchain": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+      "variables": [
+        {
+          "name": "OpenCV_DIR",
+          "value": "C:/Users/jingr/Downloads/opencv/build/x64/vc16/bin",
+          "type": "PATH"
+        }
+      ]
     }
   ]
 }
