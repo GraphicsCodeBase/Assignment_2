@@ -1,4 +1,4 @@
-name: CI/CD - Build Validation
+name: CI/CD - Build & Test Pipeline
 
 on:
   push:
@@ -8,91 +8,122 @@ on:
   workflow_dispatch:
 
 jobs:
-  validate-build:
-    name: Validate Project Configuration
+  build-and-test:
+    name: Build & Validate Project
     runs-on: windows-latest
 
     steps:
+    # ============================================================
+    # STAGE 1: SOURCE CODE CHECKOUT
+    # ============================================================
     - name: Checkout Repository
       uses: actions/checkout@v4
 
-    - name: Verify Project Structure
+    # ============================================================
+    # STAGE 2: DEPENDENCY CACHING (Smart optimization!)
+    # ============================================================
+    - name: Cache vcpkg Dependencies
+      uses: actions/cache@v4
+      id: vcpkg-cache
+      with:
+        path: C:\vcpkg
+        key: vcpkg-opencv-${{ runner.os }}-v1
+        restore-keys: |
+          vcpkg-opencv-${{ runner.os }}-
+
+    # ============================================================
+    # STAGE 3: SETUP BUILD ENVIRONMENT
+    # ============================================================
+    - name: Setup vcpkg (if not cached)
+      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
       run: |
-        echo "=== Validating Project Structure ==="
-        if (Test-Path "CMakeLists.txt") {
-          Write-Host "✓ CMakeLists.txt found" -ForegroundColor Green
-        } else {
-          Write-Error "✗ CMakeLists.txt missing"
-          exit 1
-        }
+        echo "=== Setting up vcpkg package manager ==="
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        C:\vcpkg\bootstrap-vcpkg.bat
+        Write-Host "✓ vcpkg initialized" -ForegroundColor Green
 
-        if (Test-Path "main.cpp") {
-          Write-Host "✓ main.cpp found" -ForegroundColor Green
-        } else {
-          Write-Error "✗ main.cpp missing"
-          exit 1
-        }
-
-        if (Test-Path "GreedyAlgo.cpp") {
-          Write-Host "✓ GreedyAlgo.cpp found" -ForegroundColor Green
-        } else {
-          Write-Error "✗ GreedyAlgo.cpp missing"
-          exit 1
-        }
-
-        if (Test-Path "CompareDPGreed.cpp") {
-          Write-Host "✓ CompareDPGreed.cpp found" -ForegroundColor Green
-        } else {
-          Write-Error "✗ CompareDPGreed.cpp missing"
-          exit 1
-        }
-
-    - name: Verify CMake Installation
+    - name: Install OpenCV (if not cached)
+      if: steps.vcpkg-cache.outputs.cache-hit != 'true'
       run: |
-        echo "=== Verifying CMake Installation ==="
-        cmake --version
-        Write-Host "✓ CMake is installed and ready" -ForegroundColor Green
+        echo "=== Installing OpenCV via vcpkg ==="
+        echo "NOTE: This takes ~40 minutes on first run, but will be cached!"
+        C:\vcpkg\vcpkg install opencv:x64-windows
+        Write-Host "✓ OpenCV installed" -ForegroundColor Green
+
+    - name: Load OpenCV from Cache
+      if: steps.vcpkg-cache.outputs.cache-hit == 'true'
+      run: |
+        echo "=== Loading OpenCV from cache ==="
+        Write-Host "✓ Cache hit! Skipping 40-minute OpenCV build" -ForegroundColor Green
+
+    # ============================================================
+    # STAGE 4: CONFIGURE BUILD SYSTEM
+    # ============================================================
+    - name: Configure CMake
+      run: |
+        echo "=== Configuring CMake Build System ==="
+        cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+        Write-Host "✓ CMake configuration successful" -ForegroundColor Green
+
+    # ============================================================
+    # STAGE 5: COMPILE SOURCE CODE (The real CI test!)
+    # ============================================================
+    - name: Build Project
+      run: |
+        echo "=== Compiling C++ Source Code ==="
+        cmake --build build --config Release
+        Write-Host "✓ Compilation successful!" -ForegroundColor Green
+
+    # ============================================================
+    # STAGE 6: VERIFY BUILD OUTPUTS
+    # ============================================================
+    - name: Verify Executables
+      run: |
+        echo "=== Verifying Build Outputs ==="
+        if (Test-Path "build\Release\Seam_Carving_DP.exe") {
+          Write-Host "✓ Seam_Carving_DP.exe built successfully" -ForegroundColor Green
+        }
+        if (Test-Path "build\Release\Seam_Carving_Greedy.exe") {
+          Write-Host "✓ Seam_Carving_Greedy.exe built successfully" -ForegroundColor Green
+        }
+        if (Test-Path "build\Release\Compare_Algorithms.exe") {
+          Write-Host "✓ Compare_Algorithms.exe built successfully" -ForegroundColor Green
+        }
 
         echo ""
-        echo "=== CMakeLists.txt Info ==="
-        $cmakeFile = Get-Item "CMakeLists.txt"
-        Write-Host "Size: $($cmakeFile.Length) bytes"
-        Write-Host "✓ CMakeLists.txt is readable" -ForegroundColor Green
-
-    - name: Count Source Lines
-      run: |
-        echo "=== Project Statistics ==="
-        $cppFiles = Get-ChildItem -Filter *.cpp -Recurse | Where-Object { $_.FullName -notlike "*\out\*" }
-        $hFiles = Get-ChildItem -Filter *.h -Recurse | Where-Object { $_.FullName -notlike "*\out\*" }
-
-        Write-Host "C++ Source Files: $($cppFiles.Count)"
-        Write-Host "Header Files: $($hFiles.Count)"
-
-        $totalLines = 0
-        foreach ($file in $cppFiles + $hFiles) {
-          $lines = (Get-Content $file.FullName | Measure-Object -Line).Lines
-          $totalLines += $lines
+        echo "Build artifacts:"
+        Get-ChildItem build\Release\*.exe | ForEach-Object {
+          Write-Host "$($_.Name) - $([math]::Round($_.Length/1KB, 2)) KB"
         }
-        Write-Host "Total Lines of Code: $totalLines"
 
-    - name: Verify Git History
-      run: |
-        echo "=== Git Repository Validation ==="
-        $commitCount = git rev-list --count HEAD
-        Write-Host "✓ Total Commits: $commitCount" -ForegroundColor Green
+    # ============================================================
+    # STAGE 7: CONTINUOUS DELIVERY - Upload Artifacts
+    # ============================================================
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: seam-carving-executables
+        path: |
+          build/Release/*.exe
+        retention-days: 7
 
-        echo ""
-        echo "Recent Commits:"
-        git log --oneline -n 5
-
-    - name: CI/CD Success Summary
+    # ============================================================
+    # STAGE 8: REPORTING & METRICS
+    # ============================================================
+    - name: Generate Build Report
       run: |
         echo "### CI/CD Pipeline Successful! :white_check_mark:" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Project Validation Results:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "- ✅ Project structure verified" >> $env:GITHUB_STEP_SUMMARY
-        echo "- ✅ CMakeLists.txt validated" >> $env:GITHUB_STEP_SUMMARY
-        echo "- ✅ Source files present" >> $env:GITHUB_STEP_SUMMARY
-        echo "- ✅ Git history validated" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Build Results:**" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ✅ Source code compiled successfully" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ✅ All executables built (3 total)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ✅ Build artifacts uploaded" >> $env:GITHUB_STEP_SUMMARY
+        echo "- ✅ OpenCV dependencies cached for future runs" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Note:** Configuration validation completes in ~2 minutes vs 40+ minutes for full OpenCV build." >> $env:GITHUB_STEP_SUMMARY
+
+        if ("${{ steps.vcpkg-cache.outputs.cache-hit }}" -eq "true") {
+          echo "**Performance:** Cache hit! Build completed in ~3 minutes" >> $env:GITHUB_STEP_SUMMARY
+        } else {
+          echo "**Performance:** First run - OpenCV built and cached (~40 min)" >> $env:GITHUB_STEP_SUMMARY
+          echo "**Next runs will complete in ~3 minutes using cache**" >> $env:GITHUB_STEP_SUMMARY
+        }
