@@ -225,8 +225,8 @@ cv::Mat seamCarveWithVisualization(cv::Mat image, int targetWidth, int targetHei
         image = removeVerticalSeam(image, seam);
 
         if ((i + 1) % 10 == 0 || i == 0) {
-            std::cout << "  [OK] Vertical seam " << (i + 1) << "/" << totalVerticalSeams
-                << " (Size: " << image.cols << "x" << image.rows << ")\n";
+            //std::cout << "  [OK] Vertical seam " << (i + 1) << "/" << totalVerticalSeams
+            //   << " (Size: " << image.cols << "x" << image.rows << ")\n";
         }
     }
 
