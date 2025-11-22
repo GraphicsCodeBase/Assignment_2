@@ -50,3 +50,29 @@ Greedy Avg Energy: 24555.52
 Quality Difference: 45.45%
 ---
 
+Original Size: 960x651 pixels
+Target Size: 500x500 pixels
+Vertical Seams Removed: 460
+Horizontal Seams Removed: 151
+Total Seams Removed: 611
+DP Time (ms): 56714
+Greedy Time (ms): 31539
+Speedup: 1.80x
+DP Avg Energy: 13948.97
+Greedy Avg Energy: 20761.61
+Quality Difference: 48.84%
+---
+
+Original Size: 960x651 pixels
+Target Size: 900x600 pixels
+Vertical Seams Removed: 60
+Horizontal Seams Removed: 51
+Total Seams Removed: 111
+DP Time (ms): 14432
+Greedy Time (ms): 8533
+Speedup: 1.69x
+DP Avg Energy: 9161.36
+Greedy Avg Energy: 35673.80
+Quality Difference: 289.39%
+---
+

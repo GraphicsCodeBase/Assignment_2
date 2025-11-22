@@ -1,0 +1,54 @@
+name: CMake Build & Test
+
+on:
+  push:
+    branches: [ main, extra ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+        C:\vcpkg\bootstrap-vcpkg.bat
+
+    - name: Install OpenCV
+      run: |
+        C:\vcpkg\vcpkg install opencv[core,imgproc,highgui,imgcodecs]:x64-windows
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+    - name: Build Project
+      run: |
+        cmake --build build --config Release
+
+    - name: List Build Output
+      run: |
+        dir build\Release
+
+    - name: Upload Executables
+      uses: actions/upload-artifact@v4
+      with:
+        name: seam-carving-windows
+        path: |
+          build/Release/*.exe
+        retention-days: 7
+
+    - name: Build Summary
+      run: |
+        echo "### Build Successful! :white_check_mark:" >> $env:GITHUB_STEP_SUMMARY
+        echo "Built executables:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Seam_Carving_DP.exe" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Seam_Carving_Greedy.exe" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Compare_Algorithms.exe" >> $env:GITHUB_STEP_SUMMARY
