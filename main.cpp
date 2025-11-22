@@ -12,7 +12,7 @@
 // =======================================================================
 // SEAM CARVING ALGORITHM IMPLEMENTATION
 // =======================================================================
-
+//test caching
 // Step 1: Calculate energy map using Sobel filter
 cv::Mat computeEnergyMap(const cv::Mat& image) {
     // Convert to grayscale if needed
