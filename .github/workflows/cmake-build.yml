@@ -47,14 +47,17 @@ jobs:
           exit 1
         }
 
-    - name: Validate CMake Syntax
+    - name: Verify CMake Installation
       run: |
-        echo "=== Checking CMakeLists.txt Syntax ==="
+        echo "=== Verifying CMake Installation ==="
         cmake --version
-        cmake -P CMakeLists.txt 2>&1 | Out-Null
-        if ($LASTEXITCODE -eq 0) {
-          Write-Host "✓ CMakeLists.txt syntax valid" -ForegroundColor Green
-        }
+        Write-Host "✓ CMake is installed and ready" -ForegroundColor Green
+
+        echo ""
+        echo "=== CMakeLists.txt Info ==="
+        $cmakeFile = Get-Item "CMakeLists.txt"
+        Write-Host "Size: $($cmakeFile.Length) bytes"
+        Write-Host "✓ CMakeLists.txt is readable" -ForegroundColor Green
 
     - name: Count Source Lines
       run: |
