@@ -1,8 +1,24 @@
 ﻿AI USAGE DECLARATION
 
-  Submitted by: AMOS LAU
-  Date: 19/11/2025
-  Assignment: Algorithm Analysis - Assignment 2, Question 4 A B C
+Submitted by: HO JING RUI
+Date: 22/11/2025
+Assignment: Question 1ABC & 5C
+
+Prompt 1: "Why do we process vertical seams before horizontal seams in the iterative removal process?"
+
+Prompt 2: "What is the time and space complexity of the dynamic programming seam finding algorithm?"
+
+Prompt 3: "What external libraries are there to help me implement graph-cuts?"
+
+Prompt 4: "Can you show me the steps for installing grid cuts"
+
+Prompt 5: "What are the theoretical advantages of global optimization in Graph-Cuts vs local optimization in DP?"
+
+Prompt 6: "What do these symbols "∂I/∂x and ∂I/∂y" mean?"
+
+Submitted by: AMOS LAU
+Date: 19/11/2025
+Assignment: Question 4 A B C
 
 Overview
   Claude AI (Claude 3 Haiku) was utilized during the report writing phase to
