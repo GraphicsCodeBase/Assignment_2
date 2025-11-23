@@ -1,4 +1,4 @@
-AI USAGE DECLARATION
+﻿AI USAGE DECLARATION
 
   Submitted by: AMOS LAU
   Date: 19/11/2025
@@ -51,3 +51,7 @@ How AI Was Used
   and core analysis are original work. AI assistance focused on scaffolding
   and presentation, not computation or experimentation.
 
+AI Usage Declaration for Question 2a using Claude AI by LEE JING WEN
+Prompt 1: Can you help me understand how to prove exponential growth for the seam carving problem? I need to show that S(m) (number of possible seams) is at least exponential. I'm thinking about using a lower bound argument by counting the minimum number of choices at each row. Is this the right approach?
+Prompt 2: I've written a proof showing S(m) ≥ n × 2^(m-1), but I'm not sure if my explanation is clear enough. Can you review my proof and suggest improvements to make it more rigorous and easier to understand?
+Prompt 3: For Question 2a part ii, I need to explain how the minimum-energy seam problem relates to subproblems in dynamic programming. Specifically, how do I explain optimal substructure and overlapping subproblems for this problem? What should the recurrence relation look like?
